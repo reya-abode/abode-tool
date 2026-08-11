@@ -1,0 +1,69 @@
+# Abode ROI Story Builder
+
+Paste your program numbers and get an ROI story you can take into a renewal conversation: the
+numbers behind each pillar, how each one creates value explained in plain bullets, and a PDF.
+
+Built on the eight ROI pillars from *The Value Engine ROI Pillar Guide* (Reya Yeddula, Summer 2026).
+
+## How it works
+
+Three stages, kept separate so the AI never does the arithmetic.
+
+1. **Match.** Claude reads what you pasted, pulls out the numbers it can find, and works through
+   all eight pillars. It is told not to calculate and not to invent a number to make a pillar fit.
+2. **Calculate.** `src/lib/compute.ts` runs each pillar's formula on those numbers. A pillar whose
+   required numbers are missing never reaches the document, even if the AI picked it. Every figure
+   you see comes from here.
+3. **Write.** Claude writes the story around the figures already calculated, quoting them exactly.
+
+Every pillar with enough evidence goes into the story, ordered by strength of evidence, so the
+safest plays sit at the top. Pillars that miss a number are listed under "Add these to unlock more
+pillars" with the exact number to collect.
+
+If there is no API key, or either AI step fails, the app falls back to keyword matching and
+standard wording, and says so above the document. The formulas and the PDF are identical either way.
+
+## Setup
+
+```bash
+npm install
+echo 'ANTHROPIC_API_KEY=sk-ant-...' > .env.local   # optional, turns on AI writing
+npm run dev                                        # http://localhost:3000
+```
+
+## Where things live
+
+| Path | What it holds |
+| --- | --- |
+| `src/lib/pillars.ts` | The eight pillars and the numbers they need, transcribed from the guide: formulas, the value bullets for each pillar, where the evidence comes from, what to do if leadership pushes back. |
+| `src/lib/compute.ts` | The formula for each pillar, plus the keyword parser used when AI writing is off. |
+| `src/lib/llm.ts` | The two Claude passes, both using structured outputs. |
+| `src/lib/generate.ts` | Matching, wording, and every fallback path. |
+| `src/lib/pdf.ts` | The PDF layout at 1.15 line spacing, paginated, with footers. |
+| `src/app/api/generate/route.ts` | `POST { input }` returns `{ ok, document }`. |
+| `src/components/DocumentPreview.tsx` | The document on screen, styled to match the PDF. |
+| `src/components/PillarLadder.tsx` | The eight-pillar rail that shows what matched and what is missing. |
+
+## The eight pillars
+
+Ordered by how much hard evidence the customer interviews gave us. Hard-number pillars first,
+narrative pillars last.
+
+1. **Protect**, risk and cost avoided
+2. **Connect**, belonging and readiness before day one
+3. **Save**, capacity freed, framed as work rather than hours
+4. **Scale**, growth without adding headcount
+5. **See**, visibility and the ability to step in
+6. **Improve**, conversion, quality and time to contribution
+7. **Compete**, fills a gap an ATS cannot
+8. **Impress**, candidate experience and employer brand
+
+Where the guide uses a research average in `{curly braces}`, such as messages per journey or
+minutes saved per message, the app supplies the Abode figure and lists it under "Numbers we
+estimated" whenever a calculation leaned on one.
+
+## Design
+
+Colours, type, and layout follow the Abode product UI: forest green band, cream page, white cards,
+amber for the main action, and a sage tint on anything customer facing. The guide's own colour
+coding carries through, so the formula box is amber and the value statement is green.
