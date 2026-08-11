@@ -113,32 +113,12 @@ export function DocumentPreview({ document }: { document: RoiDocument }) {
               </ul>
             </div>
 
-            <details className="group mt-3">
-              <summary className="cursor-pointer list-none text-[12.5px] font-medium text-muted transition hover:text-forest-700">
-                <span className="group-open:hidden">Show coaching notes</span>
-                <span className="hidden group-open:inline">Hide coaching notes</span>
-              </summary>
-              <div className="mt-2 space-y-2 border-l border-line pl-3">
-                <p className="text-[12.5px] leading-relaxed text-muted">
-                  <span className="font-semibold text-ink-soft">Where this comes from: </span>
-                  {section.groundedIn}
-                </p>
-                <p className="text-[12.5px] leading-relaxed text-muted">
-                  <span className="font-semibold text-ink-soft">If they push back: </span>
-                  {section.ifLeadershipShrugs}
-                </p>
-              </div>
-            </details>
           </section>
         ))}
       </div>
 
       <div className="bg-cream/60 px-7 py-8 sm:px-10">
-        <div className="doc-prose text-[15.5px] text-ink">
-          <p>{document.closing}</p>
-        </div>
-
-        <div className="mt-7 grid gap-6 sm:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2">
           {document.gaps.length > 0 && (
             <ListBlock title="Add these to unlock more pillars" items={document.gaps} />
           )}

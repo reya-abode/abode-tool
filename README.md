@@ -35,7 +35,7 @@ npm run dev                                        # http://localhost:3000
 
 | Path | What it holds |
 | --- | --- |
-| `src/lib/pillars.ts` | The eight pillars and the numbers they need, transcribed from the guide: formulas, the value bullets for each pillar, where the evidence comes from, what to do if leadership pushes back. |
+| `src/lib/pillars.ts` | The eight pillars and the numbers they need, transcribed from the guide: formulas, and the value bullets that explain how Abode produces each result and where the ROI surfaces. |
 | `src/lib/compute.ts` | The formula for each pillar, plus the keyword parser used when AI writing is off. |
 | `src/lib/llm.ts` | The two Claude passes, both using structured outputs. |
 | `src/lib/generate.ts` | Matching, wording, and every fallback path. |

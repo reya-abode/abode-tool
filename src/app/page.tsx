@@ -180,12 +180,6 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="border-t border-line bg-white">
-        <div className="mx-auto max-w-[1240px] px-5 py-5 text-[12.5px] text-muted sm:px-8">
-          What do you show, to whom, and what is missing when you cannot show it. Time saved is the
-          entry point, never the whole argument.
-        </div>
-      </footer>
     </div>
   );
 }

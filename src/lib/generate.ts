@@ -68,8 +68,6 @@ function buildSection(pillarId: PillarId, metrics: Metrics): DocumentSection {
     workedFormula: result.workedFormula,
     figures: result.figures,
     businessCase: result.businessCase,
-    groundedIn: pillar.groundedIn,
-    ifLeadershipShrugs: pillar.ifLeadershipShrugs,
   };
 }
 
@@ -93,7 +91,6 @@ function assemble(args: {
   headline: string;
   opening: string;
   sections: DocumentSection[];
-  closing: string;
   gaps: string[];
   metrics: Metrics;
   setAside: { pillarName: string; reason: string }[];
@@ -108,11 +105,7 @@ function assemble(args: {
     ),
   );
 
-  const prose = [
-    args.opening,
-    ...args.sections.flatMap((s) => s.businessCase),
-    args.closing,
-  ].join(" ");
+  const prose = [args.opening, ...args.sections.flatMap((s) => s.businessCase)].join(" ");
 
   return {
     accountName: args.accountName,
@@ -121,7 +114,6 @@ function assemble(args: {
     headline: args.headline,
     opening: args.opening,
     sections: args.sections,
-    closing: args.closing,
     gaps: args.gaps,
     assumptions,
     metricsUsed: (Object.keys(args.metrics) as MetricKey[])
@@ -149,7 +141,7 @@ function plainDocument(args: {
   const lead = sections[0];
 
   const opening = sections.length
-    ? `Your value shows up strongest in ${listNames(sections.map((s) => s.pillarName))}. Every number below runs through the formula for its pillar, using only the numbers you gave us. Time saved is the entry point, never the whole argument.`
+    ? `This program's value shows up strongest in ${listNames(sections.map((s) => s.pillarName))}. Every number below runs through the formula for its pillar, using only the numbers provided, and each pillar sets out how Abode produces the result and where the ROI surfaces.`
     : `We could not build a number from these inputs yet. Cohort size, your reneg rate before and after Abode, and the cost of one reneged hire will get you Protect, which is the pillar every account tracks.`;
 
   return assemble({
@@ -161,8 +153,6 @@ function plainDocument(args: {
       : "Add a few numbers to build your first pillar.",
     opening,
     sections,
-    closing:
-      "Together these pillars answer the question leadership actually asks: what can you show, and what goes dark without it. Anything listed below is worth collecting before your next review.",
     gaps: buildGaps(args.pillarIds, args.metrics),
     metrics: args.metrics,
     setAside: [],
@@ -176,8 +166,8 @@ function listNames(names: string[]): string {
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
-const AI_OFF_NOTE =
-  "AI writing is off, so this story uses standard wording. The numbers are the same either way.";
+/** Nothing is shown when the local engine writes the story. */
+const AI_OFF_NOTE = "";
 
 export async function generateDocument(input: string): Promise<RoiDocument> {
   if (!hasCredentials()) {
@@ -228,7 +218,7 @@ export async function generateDocument(input: string): Promise<RoiDocument> {
     figures: section.figures,
     businessCaseTemplate: section.businessCase,
     roiMeaning: PILLAR_BY_ID[section.pillarId].roiMeaning,
-    groundedIn: section.groundedIn,
+    groundedIn: PILLAR_BY_ID[section.pillarId].groundedIn,
   }));
 
   try {
@@ -254,7 +244,6 @@ export async function generateDocument(input: string): Promise<RoiDocument> {
       headline: narrative.headline,
       opening: narrative.opening,
       sections: written,
-      closing: narrative.closing,
       gaps: buildGaps(pillarIds, metrics),
       metrics,
       setAside,

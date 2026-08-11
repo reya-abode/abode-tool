@@ -39,15 +39,12 @@ export function buildPdf(document: RoiDocument): jsPDF {
     }
     if (section.figures.length) drawFigures(ctx, section.figures);
     drawBusinessCase(ctx, section.businessCase);
-    drawNote(ctx, "Where this comes from", section.groundedIn);
-    drawNote(ctx, "If they push back", section.ifLeadershipShrugs);
   });
 
   space(ctx, 16);
   ensure(ctx, 90);
   rule(ctx);
   space(ctx, 12);
-  paragraph(ctx, document.closing, { size: 10.5, font: ["helvetica", "italic"] });
 
   if (document.gaps.length) {
     space(ctx, 14);
@@ -294,15 +291,6 @@ function drawBusinessCase(ctx: Ctx, points: string[]): void {
   });
 
   ctx.y += boxHeight + 10;
-}
-
-function drawNote(ctx: Ctx, label: string, body: string): void {
-  paragraph(ctx, `${label}: ${body}`, {
-    size: 8,
-    font: ["helvetica", "normal"],
-    color: MUTED,
-    spacingAfter: 5,
-  });
 }
 
 function drawList(ctx: Ctx, title: string, items: string[]): void {

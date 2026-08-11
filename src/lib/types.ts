@@ -17,8 +17,6 @@ export type DocumentSection = {
   figures: DocumentFigure[];
   /** Informational bullets on how Abode produces this value, using this account's numbers. */
   businessCase: string[];
-  groundedIn: string;
-  ifLeadershipShrugs: string;
 };
 
 export type RoiDocument = {
@@ -28,7 +26,6 @@ export type RoiDocument = {
   headline: string;
   opening: string;
   sections: DocumentSection[];
-  closing: string;
   /** What to collect next, one line per pillar that did not make the story. */
   gaps: string[];
   /** Research averages the maths leaned on. */
@@ -55,7 +52,6 @@ export type PillarNarrative = {
   headline: string;
   opening: string;
   sections: { pillarId: PillarId; businessCase: string[] }[];
-  closing: string;
 };
 
 export type ExtractionResult = {

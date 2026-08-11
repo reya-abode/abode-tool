@@ -8,7 +8,7 @@
  * Each pillar carries:
  *   roiMeaning                 = what it means and what data to pull
  *   formulaText                = the formula that produces the number
- *   businessCase               = bullets on how Abode creates the value, and where it lands
+ *   businessCase               = bullets on how Abode produces the result and surfaces the ROI
  */
 
 export type MetricKey =
@@ -104,7 +104,7 @@ export type Pillar = {
   optional: MetricKey[];
   /**
    * Informational bullets explaining how Abode produces the result, what the number
-   * represents, and where the value lands. Tokens in {braces} are filled with this
+   * represents, and where the ROI surfaces. Tokens in {braces} are filled with this
    * account's computed figures.
    */
   businessCase: string[];
@@ -128,9 +128,9 @@ export const PILLARS: Pillar[] = [
     required: ["baselineRenegRate", "currentRenegRate", "cohortSize", "costPerRenegedHire"],
     optional: ["lowEngagementFlagged"],
     businessCase: [
-      "How Abode produces this: engagement across the pre-start window is tracked per candidate, so people who go quiet surface while the offer is still live instead of being discovered missing on the start date.",
-      "What the number represents: a reneg rate of {baseline}% falling to {current}% across {cohort} candidates is about {renegsAvoided} hires retained, valued at the {cost} it costs to replace one.",
-      "Where the value lands: {dollars} of hiring spend is not re-run through sourcing, screening, interviewing and offer approval, so it stays available to the program for the rest of the cycle.",
+      "How Abode produces this: Engagement Tracking scores every Participant across the post-offer window, and Reneg Risk Flags surface the ones going quiet while the offer is still live, so a recruiter can step in rather than finding out on the start date.",
+      "What the number represents: a reneg rate of {baseline}% falling to {current}% across {cohort} Participants is about {renegsAvoided} hires retained, valued at the {cost} it costs to replace one.",
+      "Where the ROI surfaces: {dollars} of hiring spend is not re-run through sourcing, screening, interviewing and offer approval, and the Dashboard reports that figure during the cycle rather than only after the class starts.",
     ],
     groundedIn:
       "ABB 15% to 5%. Spectrum Abode Early award plus roughly 70% engagement correlating with fewer renegs. Amazon calling renegs “costing loads of money”. MongoDB weekly reneg-risk flagging. GE Aero GPA screen.",
@@ -150,9 +150,9 @@ export const PILLARS: Pillar[] = [
     required: ["belongingPct"],
     optional: ["adoptionPct", "npsScore"],
     businessCase: [
-      "How Abode produces this: the pre-day-one journey delivers structured communications, tasks and resources, so candidates arrive already knowing their team, their tools and what their first week involves.",
-      "What the number represents: {belonging}% of the cohort reporting a stronger sense of belonging, at {adoption}% adoption, is a measured survey outcome rather than an assumption about how onboarding felt.",
-      "Where the value lands: belonging and readiness are the leading indicators underneath offer acceptance, conversion and first-year retention, and this is the pillar that makes them reportable to leadership.",
+      "How Abode produces this: the pre-day-one Journey delivers Templates, Tasks and Resources on a schedule, so Participants arrive already knowing their team, their tools and what their first week involves.",
+      "What the number represents: {belonging}% of the Cohort reporting a stronger sense of belonging, at {adoption}% adoption, is a measured Survey outcome rather than an assumption about how onboarding felt.",
+      "Where the ROI surfaces: belonging and readiness sit underneath offer acceptance, conversion and first-year retention, and the in-Journey Survey is what turns them from a belief into a number leadership can be shown.",
     ],
     groundedIn:
       "Amazon: 99% belonging as a kingpin goal, 97% adoption against an 80% target, and community named the single biggest impact. Spectrum: structured prep calls and office hours. Mondelēz, Whitley Penn, Energy Transfer and UHY all raised belonging without being asked.",
@@ -180,9 +180,9 @@ export const PILLARS: Pillar[] = [
       "adminHeadcount",
     ],
     businessCase: [
-      "How Abode produces this: journeys are built once and then send, stagger and chase communications automatically, while the resource hub answers repeat candidate questions without a coordinator in the loop.",
-      "What the number represents: {hours} hours absorbed per cycle across {cohort} candidates, which is {fte} of one person's working time at standard messaging and question volumes.",
-      "Where the value lands: that capacity returns to work that cannot be automated, such as program design, mentor matching and escalations, and it is the same capacity that would otherwise be added as headcount to run this volume by hand.",
+      "How Abode produces this: a Journey is built once from a Template and then sends, staggers and chases its own communications, while Tasks, Reminders and the Resource Hub answer repeat Participant questions without a coordinator in the loop.",
+      "What the number represents: {hours} hours absorbed per cycle across {cohort} Participants, which is {fte} of one person's working time at standard messaging and question volumes.",
+      "Where the ROI surfaces: that capacity returns to the work Abode does not automate, such as program design, mentor matching and escalations, and it is the same capacity a team would otherwise have to add as headcount to run this volume by hand.",
     ],
     groundedIn:
       "Mondelēz: “80% of my day was meetings and emails, I now get to be a leader”. Amazon runs 27,000 candidates on a tiny team and “saved hours and hours”. Spectrum went from “pulling my hair out” staggering emails to “set it and forget it”. UHY: do more with less, build once and reuse.",
@@ -203,9 +203,9 @@ export const PILLARS: Pillar[] = [
     required: ["cohortSize", "adminHeadcount"],
     optional: ["priorProgramSize", "priorAdminHeadcount"],
     businessCase: [
-      "How Abode produces this: a journey built for one cohort applies to every cohort after it, so adding candidates adds delivery volume rather than coordination work.",
-      "What the number represents: {cohort} candidates supported by {admins} admin{adminPlural}, or {ratio} candidates per admin{priorClause}.",
-      "Where the value lands: program growth is no longer tied to headcount growth, so the operating cost of each additional candidate falls as the cohort gets larger.",
+      "How Abode produces this: a Journey built for one Cohort applies to every Cohort after it, so growth adds delivery volume inside the Program rather than coordination work for the team running it.",
+      "What the number represents: {cohort} Participants supported by {admins} admin{adminPlural}, or {ratio} Participants per admin{priorClause}.",
+      "Where the ROI surfaces: Program growth stops being tied to headcount growth, so the operating cost of each additional Participant falls as the Cohort gets larger.",
     ],
     groundedIn:
       "Amazon: 27,000 candidates at roughly 97% adoption, run by two people, after Outlook capped them at 10k emails a day. Energy Transfer scaled 11 interns to 95. GE Aero: a team of one at 700 to 800. Nicole at ABB ran a global rollout.",
@@ -226,9 +226,9 @@ export const PILLARS: Pillar[] = [
     required: ["lowEngagementFlagged"],
     optional: ["followUpRatePct"],
     businessCase: [
-      "How Abode produces this: task completion and message engagement are recorded per candidate, so disengagement appears as a visible signal in the dashboard rather than as silence.",
-      "What the number represents: {coverage}, each one a candidate who would otherwise have gone quiet without anyone noticing.",
-      "Where the value lands: each early intervention is an opportunity to keep a hire after the sourcing and interviewing cost has already been spent, which is the mechanism the Protect number depends on.",
+      "How Abode produces this: Task completion and message engagement are recorded per Participant, so disengagement shows up as a visible signal on the Dashboard rather than as silence, and the weekly review routes it to the right recruiter.",
+      "What the number represents: {coverage}, each one a Participant who would otherwise have gone quiet without anyone noticing.",
+      "Where the ROI surfaces: every early intervention is a chance to keep a hire the business has already paid to source and interview, and this visibility is the mechanism that produces the Protect number.",
     ],
     groundedIn:
       "MongoDB built a weekly engagement review that routes low-engagement interns to recruiters. Amazon and Spectrum both lead with dashboard data when they talk to leadership. Energy Transfer can clearly see task completion.",
@@ -249,9 +249,9 @@ export const PILLARS: Pillar[] = [
     required: ["conversionEngagedPct", "conversionNonEngagedPct", "cohortSize"],
     optional: ["daysFasterRamp", "costPerRenegedHire"],
     businessCase: [
-      "How Abode produces this: candidates who engage before day one arrive with context, expectations and internal connections already established, which affects how quickly they contribute and whether they accept a return offer.",
-      "What the number represents: {engaged}% conversion among engaged candidates against {nonEngaged}% among the rest, applied across {cohort}, is about {extra} additional hires retained{rampClause}.",
-      "Where the value lands: converting an intern is the lowest-cost hiring route available, because sourcing, screening and interviewing have already been paid for and the person is a known quantity.",
+      "How Abode produces this: Participants who work through the Journey arrive with context, expectations and internal connections already established, which shapes how quickly they contribute and whether they accept a return offer.",
+      "What the number represents: {engaged}% conversion among engaged Participants against {nonEngaged}% among the rest, applied across {cohort}, is about {extra} additional hires retained{rampClause}.",
+      "Where the ROI surfaces: converting an intern is the lowest-cost hiring route available, and Engagement Tracking is what lets the team attribute the difference to the Journey rather than to chance.",
     ],
     groundedIn:
       "Every account calls conversion the ultimate metric. Amazon is about to run the Abode versus non-Abode conversion study at off-boarding, which is the strongest proof point coming. Koch wants time to contribution measured. Amazon interns upskill before day one.",
@@ -271,9 +271,9 @@ export const PILLARS: Pillar[] = [
     required: ["monthsOfferToStart", "cohortSize"],
     optional: [],
     businessCase: [
-      "How Abode produces this: the platform operates in the post-offer, pre-start window, which an ATS or HRIS structurally does not cover, since the applicant record closes at offer acceptance and reopens at onboarding.",
-      "What the number represents: {months} months between offer and start across {cohort} candidates is {exposure} candidate-months during which competitors are actively recruiting the same people.",
-      "Where the value lands: continuous contact through that window protects a pipeline that has already absorbed full sourcing and interviewing cost, and it is the period when accepted offers are most often lost.",
+      "How Abode produces this: Abode runs the post-offer, pre-start window that an ATS or HRIS does not cover, since the applicant record closes at offer acceptance and reopens at onboarding, and the Journey keeps Participants in contact across that entire gap.",
+      "What the number represents: {months} months between offer and start across {cohort} Participants is {exposure} candidate-months during which competitors are actively recruiting the same people.",
+      "Where the ROI surfaces: continuous contact protects a pipeline that has already absorbed full sourcing and interviewing cost, across the exact period when accepted offers are most often lost.",
     ],
     groundedIn:
       "Amazon: keeping talent from being poached in a really competitive market. Spectrum: seniors poached by IBM at career fairs, so keeping candidates warm is a competitive necessity. Whitley Penn and UHY recruit 16 to 18 months out against the Big Four, and their ATS is not built for post-offer engagement.",
@@ -294,9 +294,9 @@ export const PILLARS: Pillar[] = [
     required: [],
     optional: ["npsScore", "csatScore", "belongingPct"],
     businessCase: [
-      "How Abode produces this: between offer and start the candidate experience is the main point of contact with the employer, so it carries most of the impression a candidate forms before they arrive.",
-      "What the number represents: the cohort survey records {scores}, indicating how the experience was rated and how likely candidates are to recommend the employer to others.",
-      "Where the value lands: early-career candidates discuss their experience publicly on LinkedIn, Handshake and campus, so the effect appears in applicant quality and volume in the following hiring cycle rather than this one.",
+      "How Abode produces this: between offer and start the Journey is the main point of contact with the employer, so the Templates, Resources and Tasks a Participant sees carry most of the impression they form before they arrive.",
+      "What the number represents: the Cohort Survey records {scores}, indicating how the experience was rated and how likely Participants are to recommend the employer to others.",
+      "Where the ROI surfaces: early-career candidates discuss their experience publicly on LinkedIn, Handshake and campus, so it reaches applicant quality and volume in the following hiring cycle rather than this one.",
     ],
     groundedIn:
       "Amazon: corporate onboarding CSAT at an all-time high. MongoDB tracks intern and mentor NPS in Qualtrics, covering likelihood to recommend and to mentor again. UHY talks about community feel. Whitley Penn says part of the culture.",

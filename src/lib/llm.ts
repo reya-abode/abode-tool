@@ -177,7 +177,7 @@ const NARRATIVE_SCHEMA = {
           businessCase: {
             type: "array",
             description:
-              "Exactly three bullets, each a long complete line of 30 to 45 words. Bullet one starts 'How Abode produces this:' and explains the mechanism, meaning what the product actually does that generates this result. Bullet two starts 'What the number represents:' and states what the computed figures measure, quoting them exactly as supplied. Bullet three starts 'Where the value lands:' and explains where the return shows up in the business, such as budget, headcount, hires retained or risk carried.",
+              "Exactly three bullets, each a long complete line of 30 to 45 words. Bullet one starts 'How Abode produces this:' and names the Abode features involved, capitalised, such as Journeys, Templates, Tasks, Resources, Reminders, Surveys, Engagement Tracking, Reneg Risk Flags, the Dashboard, Programs, Cohorts and Participants. Bullet two starts 'What the number represents:' and states what the computed figures measure, quoting them exactly as supplied. Bullet three starts 'Where the ROI surfaces:' and explains where the return appears in the business, such as budget, headcount, hires retained or risk carried, and how Abode makes it visible.",
             items: { type: "string" },
           },
         },
@@ -185,14 +185,8 @@ const NARRATIVE_SCHEMA = {
         additionalProperties: false,
       },
     },
-    closing: {
-      type: "string",
-      description:
-        "Around 45 words closing the argument, saying what these pillars together mean at renewal. Do not introduce any new numbers.",
-    },
-
   },
-  required: ["title", "subtitle", "headline", "opening", "sections", "closing"],
+  required: ["title", "subtitle", "headline", "opening", "sections"],
   additionalProperties: false,
 } as const;
 
@@ -248,8 +242,13 @@ is explanation and context, never arithmetic.
 Hard rules:
 - Every number you write must appear exactly as supplied in the computed figures. Do not
   recompute, re-round, extrapolate, or introduce a number that is not there.
-- Word budget: the opening runs about 50 words and the closing about 40. Each of the
-  ${args.sections.length} pillar sections is three bullets of 30 to 45 words each.
+- Word budget: the opening runs about 50 words. Each of the ${args.sections.length} pillar sections is
+  three bullets of 30 to 45 words each.
+- Capitalise Abode feature names (Journey, Template, Task, Resource Hub, Reminder, Survey,
+  Engagement Tracking, Reneg Risk Flag, Dashboard, Program, Cohort, Participant) so readers can
+  tell the product apart from ordinary nouns.
+- Readers are Abode customer success managers and Abode customers, so assume familiarity with the
+  product and explain the ROI rather than the basics.
 - The register is informational, not persuasive. You are explaining how the product works and
   where the return comes from, the way a reference document would. Do not sell, do not congratulate
   the reader, and do not use second-person pitch phrasing such as "you get" or "this means you can".
