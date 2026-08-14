@@ -58,10 +58,15 @@ narrative pillars last.
 7. **Compete**, fills a gap an ATS cannot
 8. **Impress**, candidate experience and employer brand
 
-Seven inputs are supplied by the tool rather than asked for: questions per intern (5), minutes per
-question (15) and minutes per message (1) are Estimates, while messages per journey (8.4), intern
-NPS (64), admin NPS (58) and survey participation (70%) are Abode averages. Every one a calculation
-touches is listed under "Numbers Abode supplied" with its provenance.
+Seven inputs are supplied by the tool rather than asked for. Questions per intern (5), minutes per
+question (15), minutes per message (1) and cost per reneged hire ($4,700) are Estimates. Messages
+per journey (8.4) and intern NPS (64) are Abode averages. Typical intern NPS (32) is an industry
+benchmark. Every one a calculation touches is listed under "Numbers Abode supplied" with its
+provenance.
+
+Connect and Impress take no account inputs, so they appear in every story: Connect compares the
+Abode intern NPS average of 64 against the typical industry 32, and Impress carries only its value
+and cost bullets.
 
 ## Design
 

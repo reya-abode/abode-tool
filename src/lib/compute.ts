@@ -104,7 +104,8 @@ export function computePillar(
       const baseline = asPercent(metrics.baselineRenegRate!);
       const current = asPercent(metrics.currentRenegRate!);
       const cohort = metrics.cohortSize!;
-      const cost = metrics.costPerRenegedHire!;
+      const cost = FIXED_BY_KEY.costPerRenegedHire.value;
+      fixedUsed.push("costPerRenegedHire");
       const renegsAvoided = ((baseline - current) / 100) * cohort;
       const dollars = renegsAvoided * cost;
       const tokens = {
@@ -128,48 +129,35 @@ export function computePillar(
         ],
         businessCase: fillAll(pillar.businessCase, tokens),
         costOfInaction: fillAll(pillar.costOfInaction, tokens),
+        fixedUsed,
       };
     }
 
     case "connect": {
-      const nps = metrics.npsScore!;
       const abodeNps = FIXED_BY_KEY.internNpsAverage;
-      fixedUsed.push("internNpsAverage");
+      const industryNps = FIXED_BY_KEY.industryNpsAverage;
+      fixedUsed.push("internNpsAverage", "industryNpsAverage");
 
-      const suppliedReach = metrics.surveyReachPct;
-      const reach =
-        suppliedReach !== undefined
-          ? asPercent(suppliedReach)
-          : FIXED_BY_KEY.surveyParticipation.value;
-      if (suppliedReach === undefined) fixedUsed.push("surveyParticipation");
-
-      const delta = nps - abodeNps.value;
-      const comparison =
-        delta === 0
-          ? "level with the Abode average"
-          : `${num(Math.abs(delta), 1)} ${delta > 0 ? "above" : "below"} the Abode average`;
-
+      const delta = abodeNps.value - industryNps.value;
+      const multiple = abodeNps.value / industryNps.value;
       const tokens = {
         company: org,
-        nps: num(nps, 1),
         abodeNps: num(abodeNps.value),
-        reach: num(reach, 1),
+        industryNps: num(industryNps.value),
+        delta: num(delta),
+        multiple: num(multiple, 1),
       };
       return {
         ...base,
-        headline: `NPS ${num(nps, 1)}`,
-        raw: nps,
-        workedFormula: `intern NPS ${num(nps, 1)} vs ${num(abodeNps.value)} Abode average, reach ${pct(reach)}`,
+        headline: `NPS ${num(abodeNps.value)} vs ${num(industryNps.value)}`,
+        raw: abodeNps.value,
+        workedFormula: `${num(abodeNps.value)} Abode average vs ${num(industryNps.value)} typical industry average = ${num(delta)} points higher`,
         figures: [
-          { label: "Intern NPS, this program", value: num(nps, 1) },
           { label: "Intern NPS, Abode average", value: num(abodeNps.value) },
-          { label: "Difference", value: comparison },
+          { label: "Intern NPS, typical industry", value: num(industryNps.value) },
           {
-            label: "Survey reach",
-            value:
-              suppliedReach !== undefined
-                ? pct(reach)
-                : `${pct(reach)} (Abode average)`,
+            label: "Difference",
+            value: `${num(delta)} points higher, ${num(multiple, 1)}× the industry benchmark`,
           },
         ],
         businessCase: fillAll(pillar.businessCase, tokens),
@@ -305,12 +293,12 @@ export function computePillar(
         { label: "Conversion, not engaged", value: pct(nonEngaged) },
         { label: "Extra retained hires", value: `${num(extra, 1)} across the cohort` },
       ];
-      if (metrics.costPerRenegedHire !== undefined) {
-        figures.push({
-          label: "Re-hiring cost avoided",
-          value: usd(extra * metrics.costPerRenegedHire),
-        });
-      }
+      const replacementCost = FIXED_BY_KEY.costPerRenegedHire.value;
+      fixedUsed.push("costPerRenegedHire");
+      figures.push({
+        label: "Re-hiring cost avoided",
+        value: usd(extra * replacementCost),
+      });
       if (metrics.daysFasterRamp !== undefined) {
         figures.push({
           label: "Ready to contribute",
@@ -338,6 +326,7 @@ export function computePillar(
         figures,
         businessCase: fillAll(pillar.businessCase, tokens),
         costOfInaction: fillAll(pillar.costOfInaction, tokens),
+        fixedUsed,
       };
     }
 
@@ -358,35 +347,15 @@ export function computePillar(
     }
 
     case "impress": {
-      const figures: ComputedFigure[] = [];
-      const parts: string[] = [];
-      if (metrics.npsScore !== undefined) {
-        figures.push({ label: "Intern NPS", value: num(metrics.npsScore, 1) });
-        parts.push(`an intern NPS of ${num(metrics.npsScore, 1)}`);
-      }
-      if (metrics.csatScore !== undefined) {
-        figures.push({ label: "Onboarding CSAT", value: num(metrics.csatScore, 1) });
-        parts.push(`onboarding CSAT of ${num(metrics.csatScore, 1)}`);
-      }
-      if (figures.length === 0) {
-        return { ...base, headline: "No survey scores yet" };
-      }
-      figures.push({
-        label: "Intern NPS, Abode average",
-        value: num(FIXED_BY_KEY.internNpsAverage.value),
-      });
-      fixedUsed.push("internNpsAverage");
-
-      const tokens = { company: org, scores: parts.join(" and ") };
+      // Pillar 8 carries no numbers and no rows, only the value and cost bullets.
+      const tokens = { company: org };
       return {
         ...base,
-        headline: figures[0].value,
-        raw: metrics.npsScore ?? metrics.csatScore,
+        headline: "",
         workedFormula: "",
-        figures,
+        figures: [],
         businessCase: fillAll(pillar.businessCase, tokens),
         costOfInaction: fillAll(pillar.costOfInaction, tokens),
-        fixedUsed,
       };
     }
   }
@@ -398,9 +367,8 @@ export function eligiblePillars(metrics: Metrics): PillarId[] {
     .map((id) => id as PillarId)
     .filter((id) => {
       const pillar = PILLAR_BY_ID[id];
-      if (id === "impress") {
-        return metrics.npsScore !== undefined || metrics.csatScore !== undefined;
-      }
+      // Connect and Impress carry no account inputs, so they always appear.
+      if (id === "connect" || id === "impress") return true;
       return pillar.required.every(
         (key) => metrics[key] !== undefined && Number.isFinite(metrics[key] as number),
       );

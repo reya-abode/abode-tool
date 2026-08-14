@@ -10,9 +10,6 @@ import type { GenerateResponse, RoiDocument } from "@/lib/types";
 const SAMPLE = `Summer 2026 interns
 Cohort size: 240
 Reneg rate: 15% last year, 6% this cycle
-Cost per reneged hire: $9,500
-Intern NPS: 71
-Survey reach: 82%
 People running the program: 2
 Program size last year: 140
 At-risk interns flagged: 34
@@ -96,7 +93,7 @@ export default function Home() {
             type="text"
             value={company}
             onChange={(event) => setCompany(event.target.value)}
-            placeholder="Spectrum"
+            placeholder="Abode"
             className="mt-3 w-full max-w-md rounded-xl border border-line bg-cream/70 px-4 py-2.5 text-[14px] text-ink outline-none transition focus:border-forest-300 focus:bg-white"
           />
         </div>
@@ -108,14 +105,14 @@ export default function Home() {
                 Your numbers
               </label>
               <p className="mt-1 text-[13.5px] text-muted">
-                One per line works best. Cohort size, reneg rate, intern NPS, survey reach,
-                admins, conversion, offer to start.
+                One per line works best. Cohort size, reneg rate, admins, at-risk flags,
+                conversion, offer to start.
               </p>
             </div>
             <button
               type="button"
               onClick={() => {
-                setCompany("Spectrum");
+                setCompany("Abode");
                 setInput(SAMPLE);
               }}
               className="rounded-full border border-line px-3.5 py-1.5 font-display text-[13px] font-medium text-forest-700 transition hover:border-forest-300 hover:bg-sage-100"
@@ -130,7 +127,7 @@ export default function Home() {
             onChange={(event) => setInput(event.target.value)}
             rows={7}
             spellCheck={false}
-            placeholder={"Cohort size: 240\nReneg rate: 15% last year, 6% now\nCost per reneged hire: $9,500\nIntern NPS: 71"}
+            placeholder={"Cohort size: 240\nReneg rate: 15% last year, 6% now\nPeople running the program: 2"}
             className="mt-4 w-full resize-y rounded-xl border border-line bg-cream/70 px-4 py-3.5 font-mono text-[13px] leading-relaxed text-ink outline-none transition focus:border-forest-300 focus:bg-white"
           />
 

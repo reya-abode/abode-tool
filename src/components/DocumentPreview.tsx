@@ -46,13 +46,15 @@ export function DocumentPreview({ document }: { document: RoiDocument }) {
               <span className="text-[13px] text-muted">{section.subtitle}</span>
             </div>
 
-            <p
-              className={`mt-3 font-display font-semibold leading-tight text-forest-900 ${
-                section.kind === "hard" ? "text-[30px]" : "text-[23px]"
-              }`}
-            >
-              {section.headline}
-            </p>
+            {section.headline && (
+              <p
+                className={`mt-3 font-display font-semibold leading-tight text-forest-900 ${
+                  section.kind === "hard" ? "text-[30px]" : "text-[23px]"
+                }`}
+              >
+                {section.headline}
+              </p>
+            )}
 
             {section.formulaText && (
               <div className="mt-5 rounded-xl border-l-[3px] border-amber-200 bg-amber-100 px-4 py-3.5">

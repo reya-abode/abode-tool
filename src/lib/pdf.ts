@@ -189,6 +189,7 @@ function drawSectionHeader(ctx: Ctx, rank: number, name: string, subtitle: strin
 }
 
 function drawSectionNumber(ctx: Ctx, headline: string, kind: "hard" | "narrative"): void {
+  if (!headline) return;
   const size = kind === "hard" ? 19 : 15;
   paragraph(ctx, headline, { size, font: ["helvetica", "bold"], color: FOREST });
   space(ctx, 5);

@@ -15,6 +15,8 @@ function hintFor(name: string, gaps: string[]): string | null {
  * "312 hours ≈ 2.0 full-time months" becomes "312 hours", "40.8 retained hires" becomes "40.8".
  */
 function shortValue(headline: string): string {
+  if (!headline) return "";
+  if (headline.startsWith("NPS")) return headline;
   const match = headline.match(/^\$?[\d.,]+\s*(?:%|:\s*\d+)?(?:\s+[a-z-]{1,7})?/i);
   return (match?.[0] ?? headline).trim();
 }

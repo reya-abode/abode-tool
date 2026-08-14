@@ -13,7 +13,7 @@
  */
 
 /** Where a fixed number came from. Shown next to every value the tool supplies. */
-export type Provenance = "Estimate" | "Abode average";
+export type Provenance = "Estimate" | "Abode average" | "Industry average";
 
 export type FixedInput = {
   key: FixedKey;
@@ -31,8 +31,8 @@ export type FixedKey =
   | "minutesPerMessage"
   | "messagesPerJourney"
   | "internNpsAverage"
-  | "adminNpsAverage"
-  | "surveyParticipation";
+  | "industryNpsAverage"
+  | "costPerRenegedHire";
 
 /**
  * Values the tool supplies rather than asking for. Estimates are Abode's working
@@ -80,20 +80,20 @@ export const FIXED_INPUTS: FixedInput[] = [
     source: "2,216 responses, 12 months",
   },
   {
-    key: "adminNpsAverage",
-    label: "Admin NPS",
-    value: 58,
-    display: "58",
-    provenance: "Abode average",
-    source: "50 responses, 12 months",
+    key: "industryNpsAverage",
+    label: "Typical intern NPS",
+    value: 32,
+    display: "32",
+    provenance: "Industry average",
+    source: "early-careers benchmark",
   },
   {
-    key: "surveyParticipation",
-    label: "Survey participation",
-    value: 70,
-    display: "70%",
-    provenance: "Abode average",
-    source: "180 days",
+    key: "costPerRenegedHire",
+    label: "Cost per reneged hire",
+    value: 4700,
+    display: "$4,700",
+    provenance: "Estimate",
+    source: "",
   },
 ];
 
@@ -108,10 +108,6 @@ export type MetricKey =
   | "cohortSize"
   | "baselineRenegRate"
   | "currentRenegRate"
-  | "costPerRenegedHire"
-  | "npsScore"
-  | "csatScore"
-  | "surveyReachPct"
   | "adminHeadcount"
   | "priorProgramSize"
   | "priorAdminHeadcount"
@@ -128,21 +124,15 @@ export type Metrics = Partial<Record<MetricKey, number>>;
 export type MetricSpec = {
   key: MetricKey;
   label: string;
-  unit: "count" | "percent" | "usd" | "days" | "months" | "score";
+  unit: "count" | "percent" | "usd" | "days" | "months";
   /** Aliases the parser and the AI use to recognise this number in what you paste. */
   aliases: string[];
-  /** Fixed input used when the account does not supply its own figure. */
-  fallback?: FixedKey;
 };
 
 export const METRIC_SPECS: MetricSpec[] = [
   { key: "cohortSize", label: "Cohort size", unit: "count", aliases: ["cohort size", "cohort", "interns", "intern count", "candidates", "program size", "class size"] },
   { key: "baselineRenegRate", label: "Reneg rate before Abode", unit: "percent", aliases: ["baseline reneg rate", "reneg rate before", "previous reneg rate", "historical reneg", "reneg baseline"] },
   { key: "currentRenegRate", label: "Reneg rate now", unit: "percent", aliases: ["current reneg rate", "reneg rate now", "reneg rate", "renege rate", "reneg"] },
-  { key: "costPerRenegedHire", label: "Cost per reneged hire", unit: "usd", aliases: ["cost per reneged hire", "cost per reneg", "cost per hire", "replacement cost", "cost to rehire"] },
-  { key: "npsScore", label: "Intern NPS", unit: "score", aliases: ["nps", "net promoter", "nps score", "intern nps", "account intern nps"] },
-  { key: "csatScore", label: "Onboarding CSAT", unit: "score", aliases: ["csat", "satisfaction score", "onboarding csat"] },
-  { key: "surveyReachPct", label: "Survey reach", unit: "percent", aliases: ["survey reach", "survey participation", "completed a survey", "responded to a survey", "response rate", "reach"], fallback: "surveyParticipation" },
   { key: "adminHeadcount", label: "People running the program", unit: "count", aliases: ["admin headcount", "admins", "program admins", "coordinators", "team size", "fte"] },
   { key: "priorProgramSize", label: "Program size last year", unit: "count", aliases: ["prior year program size", "last year cohort", "previous cohort", "grew from", "scaled from", "program size last year"] },
   { key: "priorAdminHeadcount", label: "People running it last year", unit: "count", aliases: ["prior year admin", "previous admin headcount", "admins last year"] },
@@ -209,7 +199,7 @@ export const PILLARS: Pillar[] = [
     formulaLabel: "Renegs avoided in dollars",
     formulaText:
       "( [reneg rate before] − [reneg rate now] ) × [cohort size] × [cost per reneged hire]",
-    required: ["baselineRenegRate", "currentRenegRate", "cohortSize", "costPerRenegedHire"],
+    required: ["baselineRenegRate", "currentRenegRate", "cohortSize"],
     optional: ["lowEngagementFlagged"],
     businessCase: [
       "How Abode produces this: Engagement Tracking scores every Participant across the post-offer window, and Reneg Risk Flags surface the ones going quiet while the offer is still live, so a recruiter can step in rather than finding out on the start date.",
@@ -232,20 +222,19 @@ export const PILLARS: Pillar[] = [
     name: "Connect",
     subtitle: "Preparedness before day one",
     roiMeaning:
-      "The pre-day-one experience that makes interns show up ready and connected. Measured as intern sentiment against the Abode average, plus the share of the cohort engaged enough to respond to a Journey survey at all.",
-    formulaLabel: "Intern sentiment and reach",
-    formulaText:
-      "Intern sentiment = [account intern NPS] vs 64 Abode average\nReach = [% of cohort who completed at least one journey survey]",
-    required: ["npsScore"],
-    optional: ["surveyReachPct"],
+      "The pre-day-one experience that makes interns show up ready and connected, measured as the Abode intern NPS average against the typical early-careers benchmark.",
+    formulaLabel: "Intern sentiment",
+    formulaText: "Intern sentiment = 64 Abode average vs 32 typical industry average",
+    required: [],
+    optional: [],
     businessCase: [
       "How Abode produces this: the pre-day-one Journey delivers Templates, Tasks and Resources on a schedule, and the Journey Survey captures how the Cohort rates the experience while it is still running.",
-      "What the number represents: {company} interns rate the Abode experience at NPS {nps} against the Abode average of {abodeNps}, and {reach}% of the Cohort engaged with the Journey enough to respond at all.",
+      "What the number represents: interns across Abode programs return an NPS of {abodeNps}, against a typical early-careers benchmark of {industryNps}, so the platform roughly doubles how candidates rate the stretch between offer and start.",
       "Where the ROI surfaces: a Cohort that arrives already connected to the Program is the leading edge of the conversion story, and the Survey is what turns that from a belief into a number leadership can be shown.",
     ],
     costOfInaction: [
       "Without a structured pre-start Journey, candidates go quiet between offer and start and arrive cold, with no shared context and no relationships in place.",
-      "There is also no sentiment or reach figure to report, so the program cannot show whether the pre-start experience worked at all.",
+      "Programs without it sit closer to the industry NPS of {industryNps} than to the {abodeNps} Abode programs average, with no sentiment figure to report either way.",
     ],
     groundedIn:
       "Amazon: 99% belonging as a kingpin goal, 97% adoption against an 80% target, and community named the single biggest impact. Spectrum: structured prep calls and office hours. Mondelez, Whitley Penn, Energy Transfer and UHY all raised this without being asked.",
@@ -344,7 +333,7 @@ export const PILLARS: Pillar[] = [
     formulaText:
       "( [conversion, Abode-engaged] − [conversion, not engaged] ) × [cohort size] = [extra retained hires]",
     required: ["conversionEngagedPct", "conversionNonEngagedPct", "cohortSize"],
-    optional: ["daysFasterRamp", "costPerRenegedHire"],
+    optional: ["daysFasterRamp"],
     businessCase: [
       "How Abode produces this: Participants who work through the Journey arrive with context, expectations and internal connections already established, which shapes how quickly they contribute and whether they accept a return offer.",
       "What the number represents: {engaged}% conversion among engaged Participants against {nonEngaged}% among the rest, applied across {cohort}, is about {extra} additional hires retained at {company}{rampClause}.",
@@ -394,13 +383,13 @@ export const PILLARS: Pillar[] = [
     subtitle: "Candidate experience and employer brand",
     roiMeaning:
       "The experience shapes CSAT and NPS and employer reputation, and the early-career cohort is vocal, so it feeds next year's applicant quality and volume. Usually a supporting narrative under Connect.",
-    formulaLabel: "Supporting scores",
+    formulaLabel: "",
     formulaText: "",
     required: [],
-    optional: ["npsScore", "csatScore"],
+    optional: [],
     businessCase: [
       "How Abode produces this: between offer and start the Journey is the main point of contact with the employer, so the Templates, Resources and Tasks a Participant sees carry most of the impression they form before they arrive.",
-      "What the number represents: the Cohort Survey records {scores}, indicating how the experience was rated and how likely Participants are to recommend {company} to others.",
+      "What this covers: the experience {company} gives a Cohort is what they describe to peers, mentors and campus contacts, and it is the part of the employer brand a Program can actually control.",
       "Where the ROI surfaces: early-career candidates discuss their experience publicly on LinkedIn, Handshake and campus, so it reaches applicant quality and volume in the following hiring cycle rather than this one.",
     ],
     costOfInaction: [
