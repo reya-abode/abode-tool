@@ -1,7 +1,10 @@
 import {
+  FIXED_BY_KEY,
+  HOURS_PER_FTE_YEAR,
   METRIC_BY_KEY,
   METRIC_SPECS,
   PILLAR_BY_ID,
+  type FixedKey,
   type MetricKey,
   type Metrics,
   type PillarId,
@@ -22,13 +25,14 @@ export type PillarResult = {
   workedFormula: string;
   /** Informational bullets with this account's numbers substituted in. */
   businessCase: string[];
+  /** What the company carries without Abode. */
+  costOfInaction: string[];
   /** Metrics the pillar needed but did not get. Empty = fully computable. */
   missing: MetricKey[];
-  /** Benchmarks the calculation leaned on because the customer number was absent. */
-  assumptions: string[];
+  /** Fixed values this calculation leaned on, so provenance can be shown. */
+  fixedUsed: FixedKey[];
   /** Raw numeric value where one exists, for sorting / totals. */
   raw?: number;
-  rawUnit?: "usd" | "count" | "hours" | "percent" | "ratio" | "candidate-months";
 };
 
 const usd = (n: number) =>
@@ -52,21 +56,6 @@ function asPercent(value: number): number {
   return value > 0 && value <= 1 ? value * 100 : value;
 }
 
-function resolve(
-  metrics: Metrics,
-  key: MetricKey,
-  assumptions: string[],
-): number | undefined {
-  const provided = metrics[key];
-  if (provided !== undefined && Number.isFinite(provided)) return provided;
-  const spec = METRIC_BY_KEY[key];
-  if (spec.benchmark !== undefined) {
-    if (spec.benchmarkNote) assumptions.push(spec.benchmarkNote);
-    return spec.benchmark;
-  }
-  return undefined;
-}
-
 function fill(template: string, values: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_match, token: string) => values[token] ?? "[ ]");
 }
@@ -75,21 +64,37 @@ function fillAll(templates: string[], values: Record<string, string>): string[] 
   return templates.map((template) => fill(template, values));
 }
 
-export function computePillar(pillarId: PillarId, metrics: Metrics): PillarResult {
+/** How the company is referred to inside the generated copy. */
+export function companyLabel(company: string | null | undefined): string {
+  const trimmed = (company ?? "").trim();
+  return trimmed || "this program";
+}
+
+export function computePillar(
+  pillarId: PillarId,
+  metrics: Metrics,
+  company?: string | null,
+): PillarResult {
   const pillar = PILLAR_BY_ID[pillarId];
-  const assumptions: string[] = [];
+  const fixedUsed: FixedKey[] = [];
   const missing = pillar.required.filter(
     (key) => metrics[key] === undefined || !Number.isFinite(metrics[key] as number),
   );
+  const org = companyLabel(company);
 
   const base: PillarResult = {
     pillarId,
     headline: "Need more numbers",
     figures: [],
     workedFormula: pillar.formulaText,
-    businessCase: pillar.businessCase.map((line) => line.replace(/\{[^}]+\}/g, "[ ]")),
+    businessCase: pillar.businessCase.map((line) =>
+      fill(line, { company: org }).replace(/\{[^}]+\}/g, "[ ]"),
+    ),
+    costOfInaction: pillar.costOfInaction.map((line) =>
+      fill(line, { company: org }).replace(/\{[^}]+\}/g, "[ ]"),
+    ),
     missing,
-    assumptions,
+    fixedUsed,
   };
 
   if (missing.length > 0) return base;
@@ -100,71 +105,103 @@ export function computePillar(pillarId: PillarId, metrics: Metrics): PillarResul
       const current = asPercent(metrics.currentRenegRate!);
       const cohort = metrics.cohortSize!;
       const cost = metrics.costPerRenegedHire!;
-      const delta = (baseline - current) / 100;
-      const renegsAvoided = delta * cohort;
+      const renegsAvoided = ((baseline - current) / 100) * cohort;
       const dollars = renegsAvoided * cost;
+      const tokens = {
+        company: org,
+        baseline: String(baseline),
+        current: String(current),
+        cohort: num(cohort),
+        cost: usd(cost),
+        dollars: usd(dollars),
+        renegsAvoided: num(renegsAvoided, 1),
+      };
       return {
         ...base,
         headline: usd(dollars),
         raw: dollars,
-        rawUnit: "usd",
         workedFormula: `( ${pct(baseline)} − ${pct(current)} ) × ${num(cohort)} × ${usd(cost)} = ${usd(dollars)}`,
         figures: [
           { label: "Reneg rate", value: `${pct(baseline)} down to ${pct(current)}` },
           { label: "Renegs avoided", value: `${num(renegsAvoided, 1)} hires` },
           { label: "Hiring cost avoided", value: usd(dollars) },
         ],
-        businessCase: fillAll(pillar.businessCase, {
-          baseline: String(baseline),
-          current: String(current),
-          cohort: num(cohort),
-          cost: usd(cost),
-          dollars: usd(dollars),
-          renegsAvoided: num(renegsAvoided, 1),
-        }),
+        businessCase: fillAll(pillar.businessCase, tokens),
+        costOfInaction: fillAll(pillar.costOfInaction, tokens),
       };
     }
 
     case "connect": {
-      const belonging = asPercent(metrics.belongingPct!);
-      const adoption = metrics.adoptionPct !== undefined ? asPercent(metrics.adoptionPct) : undefined;
-      const figures: ComputedFigure[] = [{ label: "Belonging before day one", value: pct(belonging) }];
-      if (adoption !== undefined) figures.push({ label: "Platform adoption", value: pct(adoption) });
-      if (metrics.npsScore !== undefined) figures.push({ label: "Intern NPS", value: num(metrics.npsScore) });
+      const nps = metrics.npsScore!;
+      const abodeNps = FIXED_BY_KEY.internNpsAverage;
+      fixedUsed.push("internNpsAverage");
+
+      const suppliedReach = metrics.surveyReachPct;
+      const reach =
+        suppliedReach !== undefined
+          ? asPercent(suppliedReach)
+          : FIXED_BY_KEY.surveyParticipation.value;
+      if (suppliedReach === undefined) fixedUsed.push("surveyParticipation");
+
+      const delta = nps - abodeNps.value;
+      const comparison =
+        delta === 0
+          ? "level with the Abode average"
+          : `${num(Math.abs(delta), 1)} ${delta > 0 ? "above" : "below"} the Abode average`;
+
+      const tokens = {
+        company: org,
+        nps: num(nps, 1),
+        abodeNps: num(abodeNps.value),
+        reach: num(reach, 1),
+      };
       return {
         ...base,
-        headline: pct(belonging),
-        raw: belonging,
-        rawUnit: "percent",
-        workedFormula: `average belonging = ${pct(belonging)}${adoption !== undefined ? ` at ${pct(adoption)} adoption` : ""}`,
-        figures,
-        businessCase: fillAll(pillar.businessCase, {
-          belonging: String(belonging),
-          adoption: adoption !== undefined ? String(adoption) : "[ ]",
-        }),
+        headline: `NPS ${num(nps, 1)}`,
+        raw: nps,
+        workedFormula: `intern NPS ${num(nps, 1)} vs ${num(abodeNps.value)} Abode average, reach ${pct(reach)}`,
+        figures: [
+          { label: "Intern NPS, this program", value: num(nps, 1) },
+          { label: "Intern NPS, Abode average", value: num(abodeNps.value) },
+          { label: "Difference", value: comparison },
+          {
+            label: "Survey reach",
+            value:
+              suppliedReach !== undefined
+                ? pct(reach)
+                : `${pct(reach)} (Abode average)`,
+          },
+        ],
+        businessCase: fillAll(pillar.businessCase, tokens),
+        costOfInaction: fillAll(pillar.costOfInaction, tokens),
+        fixedUsed,
       };
     }
 
     case "save": {
       const cohort = metrics.cohortSize!;
-      const comms = resolve(metrics, "avgCommsPerJourney", assumptions)!;
-      const minPerComms = resolve(metrics, "minSavedPerComms", assumptions)!;
-      const faqs = resolve(metrics, "avgFaqDeflections", assumptions)!;
-      const minPerQ = resolve(metrics, "minPerQuestion", assumptions)!;
-      const commsHours = (cohort * comms * minPerComms) / 60;
-      const faqHours = (cohort * faqs * minPerQ) / 60;
-      const hours = commsHours + faqHours;
-      // One working month is about 160 hours. Expressed as work, not hours.
-      const fteMonths = hours / 160;
-      const fteShown = num(fteMonths, 1);
-      const fteLabel =
-        fteMonths >= 1
-          ? `${fteShown} full-time month${fteShown === "1" ? "" : "s"}`
-          : `${Math.round(fteMonths * 100)}% of a full-time month`;
+      const questions = FIXED_BY_KEY.questionsPerIntern.value;
+      const minsPerQuestion = FIXED_BY_KEY.minutesPerQuestion.value;
+      const messages = FIXED_BY_KEY.messagesPerJourney.value;
+      const minsPerMessage = FIXED_BY_KEY.minutesPerMessage.value;
+      fixedUsed.push(
+        "questionsPerIntern",
+        "minutesPerQuestion",
+        "messagesPerJourney",
+        "minutesPerMessage",
+      );
+
+      // Each term is rounded to whole hours first, so the figures on screen add up to the total.
+      const questionHours = Math.round((cohort * questions * minsPerQuestion) / 60);
+      const messageHours = Math.round((cohort * messages * minsPerMessage) / 60);
+      const hours = questionHours + messageHours;
+      const fte = hours / HOURS_PER_FTE_YEAR;
+      const fteLabel = `${num(fte, 2)} FTE`;
+
       const figures: ComputedFigure[] = [
-        { label: "Message work absorbed", value: `${num(commsHours, 1)} hours` },
-        { label: "Questions answered for you", value: `${num(faqHours, 1)} hours` },
-        { label: "Capacity freed per cycle", value: `${num(hours, 1)} hours (${fteLabel})` },
+        { label: "Questions answered for you", value: `${num(questionHours, 0)} hours` },
+        { label: "Message work absorbed", value: `${num(messageHours, 0)} hours` },
+        { label: "Capacity freed per cycle", value: `${num(hours, 0)} hours (${fteLabel})` },
       ];
       if (metrics.loadedHourlyCost !== undefined) {
         figures.push({
@@ -172,25 +209,17 @@ export function computePillar(pillarId: PillarId, metrics: Metrics): PillarResul
           value: usd(hours * metrics.loadedHourlyCost),
         });
       }
-      if (metrics.adminHeadcount !== undefined) {
-        figures.push({
-          label: "Headcount avoided",
-          value: `${fteShown} more admin month${fteShown === "1" ? "" : "s"} to do this by hand at your volume`,
-        });
-      }
+
+      const tokens = { company: org, hours: num(hours, 0), fte: fteLabel, cohort: num(cohort) };
       return {
         ...base,
         headline: `${num(hours, 0)} hours ≈ ${fteLabel}`,
         raw: hours,
-        rawUnit: "hours",
-        workedFormula: `${num(cohort)} × ${num(comms)} × ${num(minPerComms)} min + ${num(cohort)} × ${num(faqs)} × ${num(minPerQ)} min = ${num(hours, 1)} hours`,
+        workedFormula: `${num(cohort)} × ${questions} × ${minsPerQuestion} min ÷ 60 + ${num(cohort)} × ${messages} × ${minsPerMessage} min ÷ 60 = ${num(hours, 0)} hours`,
         figures,
-        assumptions,
-        businessCase: fillAll(pillar.businessCase, {
-          hours: num(hours, 0),
-          fte: fteLabel,
-          cohort: num(cohort),
-        }),
+        businessCase: fillAll(pillar.businessCase, tokens),
+        costOfInaction: fillAll(pillar.costOfInaction, tokens),
+        fixedUsed,
       };
     }
 
@@ -201,6 +230,7 @@ export function computePillar(pillarId: PillarId, metrics: Metrics): PillarResul
       const priorSize = metrics.priorProgramSize;
       const priorAdmins = metrics.priorAdminHeadcount ?? admins;
       const priorRatio = priorSize !== undefined ? priorSize / priorAdmins : undefined;
+
       const figures: ComputedFigure[] = [
         { label: "Interns per admin", value: `${num(ratio, 1)} : 1` },
       ];
@@ -208,59 +238,59 @@ export function computePillar(pillarId: PillarId, metrics: Metrics): PillarResul
         figures.push({ label: "Last year", value: `${num(priorRatio, 1)} : 1` });
         figures.push({
           label: "Improvement",
-          value: `${num(ratio / priorRatio, 1)}× more candidates per admin`,
+          value: `${num(ratio / priorRatio, 1)}× more Participants per admin`,
         });
       }
       const priorClause =
         priorSize !== undefined
           ? `, up from ${num(priorSize)} on ${num(priorAdmins)} last year`
           : "";
+
+      const tokens = {
+        company: org,
+        cohort: num(cohort),
+        admins: num(admins),
+        adminPlural: admins === 1 ? "" : "s",
+        ratio: num(ratio, 1),
+        priorClause,
+      };
       return {
         ...base,
         headline: `${num(ratio, 1)} : 1`,
         raw: ratio,
-        rawUnit: "ratio",
         workedFormula: `${num(cohort)} ÷ ${num(admins)} = ${num(ratio, 1)} interns per admin${priorRatio !== undefined ? ` (prior year: ${num(priorRatio, 1)})` : ""}`,
         figures,
-        businessCase: fillAll(pillar.businessCase, {
-          cohort: num(cohort),
-          admins: num(admins),
-          adminPlural: admins === 1 ? "" : "s",
-          ratio: num(ratio, 1),
-          priorClause,
-        }),
+        businessCase: fillAll(pillar.businessCase, tokens),
+        costOfInaction: fillAll(pillar.costOfInaction, tokens),
       };
     }
 
     case "see": {
       const flagged = metrics.lowEngagementFlagged!;
-      const followUp = metrics.followUpRatePct !== undefined ? asPercent(metrics.followUpRatePct) : 100;
-      if (metrics.followUpRatePct === undefined) {
-        assumptions.push(
-          "You did not give a follow-up rate, so every flag is counted as actioned. Treat the intervention count as a best case.",
-        );
-      }
+      const followUp =
+        metrics.followUpRatePct !== undefined ? asPercent(metrics.followUpRatePct) : 100;
       const interventions = (flagged * followUp) / 100;
+      const tokens = {
+        company: org,
+        flagged: num(flagged),
+        interventions: num(interventions, 1),
+        coverage:
+          metrics.followUpRatePct === undefined
+            ? `${num(flagged)} at-risk Participants surfaced this cycle and routed to a follow-up`
+            : `${num(flagged)} at-risk Participants surfaced this cycle, of which ${num(interventions, 1)} were routed to a follow-up`,
+      };
       return {
         ...base,
         headline: `${num(interventions, 1)} interventions`,
         raw: interventions,
-        rawUnit: "count",
-        workedFormula: `${num(flagged)} flagged × ${pct(followUp)} routed = ${num(interventions, interventions % 1 === 0 ? 0 : 1)} early interventions`,
+        workedFormula: `${num(flagged)} flagged × ${pct(followUp)} followed up = ${num(interventions, 1)} early interventions`,
         figures: [
           { label: "At-risk interns flagged", value: `${num(flagged)} this cycle` },
           { label: "Followed up on", value: pct(followUp) },
-          { label: "Early interventions", value: num(interventions, interventions % 1 === 0 ? 0 : 1) },
+          { label: "Early interventions", value: num(interventions, 1) },
         ],
-        assumptions,
-        businessCase: fillAll(pillar.businessCase, {
-          flagged: num(flagged),
-          interventions: num(interventions, 1),
-          coverage:
-            metrics.followUpRatePct === undefined
-              ? `${num(flagged)} at-risk candidates surfaced this cycle and routed to a follow-up`
-              : `${num(flagged)} at-risk candidates surfaced this cycle, of which ${num(interventions, 1)} were routed to a follow-up`,
-        }),
+        businessCase: fillAll(pillar.businessCase, tokens),
+        costOfInaction: fillAll(pillar.costOfInaction, tokens),
       };
     }
 
@@ -269,13 +299,11 @@ export function computePillar(pillarId: PillarId, metrics: Metrics): PillarResul
       const nonEngaged = asPercent(metrics.conversionNonEngagedPct!);
       const cohort = metrics.cohortSize!;
       const extra = ((engaged - nonEngaged) / 100) * cohort;
+
       const figures: ComputedFigure[] = [
         { label: "Conversion, Abode-engaged", value: pct(engaged) },
         { label: "Conversion, not engaged", value: pct(nonEngaged) },
-        {
-          label: "Extra retained hires",
-          value: `${num(extra, extra % 1 === 0 ? 0 : 1)} across the cohort`,
-        },
+        { label: "Extra retained hires", value: `${num(extra, 1)} across the cohort` },
       ];
       if (metrics.costPerRenegedHire !== undefined) {
         figures.push({
@@ -284,47 +312,48 @@ export function computePillar(pillarId: PillarId, metrics: Metrics): PillarResul
         });
       }
       if (metrics.daysFasterRamp !== undefined) {
-        figures.push({ label: "Ready to contribute", value: `${num(metrics.daysFasterRamp)} days sooner` });
+        figures.push({
+          label: "Ready to contribute",
+          value: `${num(metrics.daysFasterRamp)} days sooner`,
+        });
       }
       const rampClause =
         metrics.daysFasterRamp !== undefined
           ? `, and those who engaged reached full contribution ${num(metrics.daysFasterRamp)} days sooner`
           : "";
+
+      const tokens = {
+        company: org,
+        engaged: String(engaged),
+        nonEngaged: String(nonEngaged),
+        extra: num(extra, 1),
+        cohort: num(cohort),
+        rampClause,
+      };
       return {
         ...base,
         headline: `${num(extra, 1)} retained hires`,
         raw: extra,
-        rawUnit: "count",
-        workedFormula: `( ${pct(engaged)} − ${pct(nonEngaged)} ) × ${num(cohort)} = ${num(extra, extra % 1 === 0 ? 0 : 1)} extra retained hires`,
+        workedFormula: `( ${pct(engaged)} − ${pct(nonEngaged)} ) × ${num(cohort)} = ${num(extra, 1)} extra retained hires`,
         figures,
-        businessCase: fillAll(pillar.businessCase, {
-          engaged: String(engaged),
-          nonEngaged: String(nonEngaged),
-          extra: num(extra, 1),
-          rampClause,
-        }),
+        businessCase: fillAll(pillar.businessCase, tokens),
+        costOfInaction: fillAll(pillar.costOfInaction, tokens),
       };
     }
 
     case "compete": {
+      // Pillar 7 shows no formula and no figures, only the value and cost bullets.
       const months = metrics.monthsOfferToStart!;
       const cohort = metrics.cohortSize!;
-      const exposure = months * cohort;
+      const tokens = { company: org, months: num(months), cohort: num(cohort) };
       return {
         ...base,
-        headline: `${num(exposure)} candidate-months`,
-        raw: exposure,
-        rawUnit: "candidate-months",
-        workedFormula: `${num(months)} months × ${num(cohort)} candidates = ${num(exposure)} candidate-months of exposure covered`,
-        figures: [
-          { label: "Offer to start", value: `${num(months)} months` },
-          { label: "Poaching exposure covered", value: `${num(exposure)} candidate-months` },
-        ],
-        businessCase: fillAll(pillar.businessCase, {
-          months: num(months),
-          exposure: num(exposure),
-          cohort: num(cohort),
-        }),
+        headline: `${num(months)} month gap`,
+        raw: months,
+        workedFormula: "",
+        figures: [],
+        businessCase: fillAll(pillar.businessCase, tokens),
+        costOfInaction: fillAll(pillar.costOfInaction, tokens),
       };
     }
 
@@ -332,29 +361,32 @@ export function computePillar(pillarId: PillarId, metrics: Metrics): PillarResul
       const figures: ComputedFigure[] = [];
       const parts: string[] = [];
       if (metrics.npsScore !== undefined) {
-        figures.push({ label: "Intern NPS", value: num(metrics.npsScore) });
-        parts.push(`an intern NPS of ${num(metrics.npsScore)}`);
+        figures.push({ label: "Intern NPS", value: num(metrics.npsScore, 1) });
+        parts.push(`an intern NPS of ${num(metrics.npsScore, 1)}`);
       }
       if (metrics.csatScore !== undefined) {
-        figures.push({ label: "Onboarding CSAT", value: num(metrics.csatScore) });
-        parts.push(`onboarding CSAT of ${num(metrics.csatScore)}`);
-      }
-      if (metrics.belongingPct !== undefined) {
-        figures.push({ label: "Belonging", value: pct(asPercent(metrics.belongingPct)) });
+        figures.push({ label: "Onboarding CSAT", value: num(metrics.csatScore, 1) });
+        parts.push(`onboarding CSAT of ${num(metrics.csatScore, 1)}`);
       }
       if (figures.length === 0) {
         return { ...base, headline: "No survey scores yet" };
       }
+      figures.push({
+        label: "Intern NPS, Abode average",
+        value: num(FIXED_BY_KEY.internNpsAverage.value),
+      });
+      fixedUsed.push("internNpsAverage");
+
+      const tokens = { company: org, scores: parts.join(" and ") };
       return {
         ...base,
         headline: figures[0].value,
         raw: metrics.npsScore ?? metrics.csatScore,
-        rawUnit: "count",
         workedFormula: "",
         figures,
-        businessCase: fillAll(pillar.businessCase, {
-          scores: parts.length ? parts.join(" and ") : "the belonging figure shown above",
-        }),
+        businessCase: fillAll(pillar.businessCase, tokens),
+        costOfInaction: fillAll(pillar.costOfInaction, tokens),
+        fixedUsed,
       };
     }
   }
@@ -367,11 +399,7 @@ export function eligiblePillars(metrics: Metrics): PillarId[] {
     .filter((id) => {
       const pillar = PILLAR_BY_ID[id];
       if (id === "impress") {
-        return (
-          metrics.npsScore !== undefined ||
-          metrics.csatScore !== undefined ||
-          metrics.belongingPct !== undefined
-        );
+        return metrics.npsScore !== undefined || metrics.csatScore !== undefined;
       }
       return pillar.required.every(
         (key) => metrics[key] !== undefined && Number.isFinite(metrics[key] as number),
@@ -473,7 +501,6 @@ export function parseMetricsHeuristically(input: string): Metrics {
   if (renegPair) {
     const first = parseFloat(renegPair[1]);
     const second = parseFloat(renegPair[2]);
-    // The improvement runs downward: the larger figure is the baseline.
     set("baselineRenegRate", Math.max(first, second));
     set("currentRenegRate", Math.min(first, second));
   }
@@ -497,7 +524,6 @@ export function parseMetricsHeuristically(input: string): Metrics {
     const line = normalise(rawLine);
     if (!line.trim()) continue;
 
-    // Split at the first number: what precedes it is the label.
     const numberStart = line.search(/\d/);
     if (numberStart <= 0) continue;
     const label = line.slice(0, numberStart);
@@ -514,3 +540,5 @@ export function parseMetricsHeuristically(input: string): Metrics {
 
   return metrics;
 }
+
+export { METRIC_BY_KEY };

@@ -1,4 +1,4 @@
-import type { MetricKey, PillarId } from "./pillars";
+import type { MetricKey, PillarId, Provenance } from "./pillars";
 
 export type DocumentFigure = { label: string; value: string };
 
@@ -17,10 +17,22 @@ export type DocumentSection = {
   figures: DocumentFigure[];
   /** Informational bullets on how Abode produces this value, using this account's numbers. */
   businessCase: string[];
+  /** What the company carries without Abode. */
+  costOfInaction: string[];
+};
+
+/** A value the tool supplied, with where it came from. */
+export type SuppliedValue = {
+  label: string;
+  value: string;
+  provenance: Provenance;
+  source: string;
 };
 
 export type RoiDocument = {
   accountName: string | null;
+  /** Company name typed into the Company box. */
+  company: string | null;
   title: string;
   subtitle: string;
   headline: string;
@@ -28,8 +40,8 @@ export type RoiDocument = {
   sections: DocumentSection[];
   /** What to collect next, one line per pillar that did not make the story. */
   gaps: string[];
-  /** Research averages the maths leaned on. */
-  assumptions: string[];
+  /** Fixed values the maths leaned on, each labelled Estimate or Abode average. */
+  suppliedValues: SuppliedValue[];
   metricsUsed: DocumentFigure[];
   /** Pillars the AI could not match, with the reason. */
   setAside: { pillarName: string; reason: string }[];
@@ -39,7 +51,7 @@ export type RoiDocument = {
   generatedAt: string;
 };
 
-export type GenerateRequest = { input: string };
+export type GenerateRequest = { input: string; company?: string };
 
 export type GenerateResponse =
   | { ok: true; document: RoiDocument }

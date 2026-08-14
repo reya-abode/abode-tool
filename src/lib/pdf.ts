@@ -14,6 +14,9 @@ const FOREST: [number, number, number] = [34, 64, 47];
 const FORMULA_BG: [number, number, number] = [253, 246, 231];
 const FORMULA_RULE: [number, number, number] = [235, 189, 91];
 const SAY_BG: [number, number, number] = [230, 240, 233];
+const COST_BG: [number, number, number] = [253, 239, 235];
+const COST_RULE: [number, number, number] = [166, 67, 43];
+const COST_INK: [number, number, number] = [125, 50, 32];
 const HAIRLINE: [number, number, number] = [228, 223, 214];
 
 type Ctx = { doc: jsPDF; y: number; page: number };
@@ -39,6 +42,7 @@ export function buildPdf(document: RoiDocument): jsPDF {
     }
     if (section.figures.length) drawFigures(ctx, section.figures);
     drawBusinessCase(ctx, section.businessCase);
+    if (section.costOfInaction.length) drawCostOfInaction(ctx, section.costOfInaction);
   });
 
   space(ctx, 16);
@@ -50,9 +54,16 @@ export function buildPdf(document: RoiDocument): jsPDF {
     space(ctx, 14);
     drawList(ctx, "Add these to unlock more pillars", document.gaps);
   }
-  if (document.assumptions.length) {
+  if (document.suppliedValues.length) {
     space(ctx, 12);
-    drawList(ctx, "Numbers we estimated", document.assumptions);
+    drawList(
+      ctx,
+      "Numbers Abode supplied",
+      document.suppliedValues.map(
+        (supplied) =>
+          `${supplied.label}: ${supplied.value} (${supplied.provenance}${supplied.source ? `, ${supplied.source}` : ""})`,
+      ),
+    );
   }
   if (document.setAside.length) {
     space(ctx, 12);
@@ -245,7 +256,22 @@ function drawFigures(ctx: Ctx, figures: { label: string; value: string }[]): voi
   space(ctx, 8);
 }
 
+function drawCostOfInaction(ctx: Ctx, points: string[]): void {
+  drawBulletBox(ctx, points, "COST OF NOT USING ABODE", COST_BG, COST_RULE, COST_INK);
+}
+
 function drawBusinessCase(ctx: Ctx, points: string[]): void {
+  drawBulletBox(ctx, points, "HOW THIS CREATES VALUE", SAY_BG, FOREST, INK);
+}
+
+function drawBulletBox(
+  ctx: Ctx,
+  points: string[],
+  title: string,
+  background: [number, number, number],
+  rule: [number, number, number],
+  ink: [number, number, number],
+): void {
   if (points.length === 0) return;
   const padding = 10;
   const bulletIndent = 11;
@@ -261,25 +287,25 @@ function drawBusinessCase(ctx: Ctx, points: string[]): void {
   const boxHeight = padding * 2 + 13 + bodyHeight;
 
   ensure(ctx, boxHeight + 10);
-  ctx.doc.setFillColor(...SAY_BG);
+  ctx.doc.setFillColor(...background);
   ctx.doc.rect(MARGIN.left, ctx.y, CONTENT_WIDTH, boxHeight, "F");
-  ctx.doc.setFillColor(...FOREST);
+  ctx.doc.setFillColor(...rule);
   ctx.doc.rect(MARGIN.left, ctx.y, 2.5, boxHeight, "F");
 
   ctx.doc.setFont("helvetica", "bold");
   ctx.doc.setFontSize(7);
-  ctx.doc.setTextColor(...FOREST);
-  ctx.doc.text("HOW THIS CREATES VALUE", MARGIN.left + padding, ctx.y + padding + 6);
+  ctx.doc.setTextColor(...rule);
+  ctx.doc.text(title, MARGIN.left + padding, ctx.y + padding + 6);
 
   let cursor = ctx.y + padding + 13;
   measured.forEach((item) => {
     ctx.doc.setFont("helvetica", "bold");
     ctx.doc.setFontSize(size);
-    ctx.doc.setTextColor(...FOREST);
+    ctx.doc.setTextColor(...rule);
     ctx.doc.text("·", MARGIN.left + padding, cursor + size * 0.86);
 
     ctx.doc.setFont("helvetica", "normal");
-    ctx.doc.setTextColor(...INK);
+    ctx.doc.setTextColor(...ink);
     item.lines.forEach((line, i) => {
       ctx.doc.text(
         line,

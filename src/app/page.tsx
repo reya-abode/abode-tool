@@ -11,9 +11,8 @@ const SAMPLE = `Summer 2026 interns
 Cohort size: 240
 Reneg rate: 15% last year, 6% this cycle
 Cost per reneged hire: $9,500
-Belonging survey: 92%
-Adoption: 88%
 Intern NPS: 71
+Survey reach: 82%
 People running the program: 2
 Program size last year: 140
 At-risk interns flagged: 34
@@ -22,6 +21,7 @@ Conversion: 68% for engaged interns vs 51% for the rest
 Offer to start: 7 months`;
 
 export default function Home() {
+  const [company, setCompany] = useState("");
   const [input, setInput] = useState("");
   const [document, setDocument] = useState<RoiDocument | null>(null);
   const [pending, setPending] = useState(false);
@@ -39,7 +39,7 @@ export default function Home() {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ input }),
+        body: JSON.stringify({ input, company }),
       });
       const payload = (await response.json()) as GenerateResponse;
       if (!payload.ok) {
@@ -84,20 +84,40 @@ export default function Home() {
       </section>
 
       <main className="mx-auto -mt-20 w-full max-w-[1240px] flex-1 px-5 pb-16 sm:px-8">
-        <div className="rise rise-2 card p-5 sm:p-7">
+        <div className="rise rise-2 card mb-5 p-5 sm:p-7">
+          <label htmlFor="company" className="font-display text-base font-semibold text-forest-900">
+            Company
+          </label>
+          <p className="mt-1 text-[13.5px] text-muted">
+            The name is used throughout the story, so the document reads as theirs.
+          </p>
+          <input
+            id="company"
+            type="text"
+            value={company}
+            onChange={(event) => setCompany(event.target.value)}
+            placeholder="Spectrum"
+            className="mt-3 w-full max-w-md rounded-xl border border-line bg-cream/70 px-4 py-2.5 text-[14px] text-ink outline-none transition focus:border-forest-300 focus:bg-white"
+          />
+        </div>
+
+        <div className="rise rise-3 card p-5 sm:p-7">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <label htmlFor="numbers" className="font-display text-base font-semibold text-forest-900">
                 Your numbers
               </label>
               <p className="mt-1 text-[13.5px] text-muted">
-                One per line works best. Cohort size, reneg rate, belonging, NPS, admins,
-                conversion, offer to start.
+                One per line works best. Cohort size, reneg rate, intern NPS, survey reach,
+                admins, conversion, offer to start.
               </p>
             </div>
             <button
               type="button"
-              onClick={() => setInput(SAMPLE)}
+              onClick={() => {
+                setCompany("Spectrum");
+                setInput(SAMPLE);
+              }}
               className="rounded-full border border-line px-3.5 py-1.5 font-display text-[13px] font-medium text-forest-700 transition hover:border-forest-300 hover:bg-sage-100"
             >
               Use sample numbers
@@ -110,7 +130,7 @@ export default function Home() {
             onChange={(event) => setInput(event.target.value)}
             rows={7}
             spellCheck={false}
-            placeholder={"Cohort size: 240\nReneg rate: 15% last year, 6% now\nCost per reneged hire: $9,500\nBelonging: 92%"}
+            placeholder={"Cohort size: 240\nReneg rate: 15% last year, 6% now\nCost per reneged hire: $9,500\nIntern NPS: 71"}
             className="mt-4 w-full resize-y rounded-xl border border-line bg-cream/70 px-4 py-3.5 font-mono text-[13px] leading-relaxed text-ink outline-none transition focus:border-forest-300 focus:bg-white"
           />
 

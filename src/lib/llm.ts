@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import {
+  FIXED_INPUTS,
   METRIC_SPECS,
   PILLARS,
   THROUGH_LINE,
@@ -33,8 +34,12 @@ const PILLAR_REFERENCE = PILLARS.map(
 ).join("\n\n");
 
 const METRIC_REFERENCE = METRIC_SPECS.map(
-  (spec) =>
-    `- ${spec.key} (${spec.unit})${spec.benchmark !== undefined ? ` [benchmark if absent: ${spec.benchmark}]` : ""}: ${spec.label}. Recognise as: ${spec.aliases.join("; ")}`,
+  (spec) => `- ${spec.key} (${spec.unit}): ${spec.label}. Recognise as: ${spec.aliases.join("; ")}`,
+).join("\n");
+
+const FIXED_REFERENCE = FIXED_INPUTS.map(
+  (fixed) =>
+    `- ${fixed.label}: ${fixed.display} (${fixed.provenance}${fixed.source ? `, ${fixed.source}` : ""})`,
 ).join("\n");
 
 const SHARED_CONTEXT = `You are the Value Engine, Abode's ROI analyst. Abode is an early-careers onboarding
@@ -55,7 +60,13 @@ THE EIGHT PILLARS
 ${PILLAR_REFERENCE}
 
 METRICS YOU CAN EXTRACT
-${METRIC_REFERENCE}`;
+${METRIC_REFERENCE}
+
+VALUES THE TOOL SUPPLIES, NEVER ASK FOR THESE AND NEVER CHANGE THEM
+${FIXED_REFERENCE}
+
+An Estimate is Abode's working assumption. An Abode average comes from platform data over the
+stated window. When you refer to one, say which it is.`;
 
 const EXTRACTION_SCHEMA = {
   type: "object",
@@ -205,6 +216,7 @@ export type NarrativeInputSection = {
 /** Pass 2, writing the narrative around numbers that have already been computed. */
 export async function writeNarrative(args: {
   input: string;
+  company: string | null;
   accountName: string | null;
   metrics: Record<string, number>;
   sections: NarrativeInputSection[];
@@ -249,6 +261,10 @@ Hard rules:
   tell the product apart from ordinary nouns.
 - Readers are Abode customer success managers and Abode customers, so assume familiarity with the
   product and explain the ROI rather than the basics.
+- Refer to the company by the name given at the top of the user message, at least once in each
+  pillar's bullets. If no name is given, say "this program" instead.
+- Never restate or recompute the supplied Estimates and Abode averages. Quote them as given and
+  name which kind they are when you mention one.
 - The register is informational, not persuasive. You are explaining how the product works and
   where the return comes from, the way a reference document would. Do not sell, do not congratulate
   the reader, and do not use second-person pitch phrasing such as "you get" or "this means you can".
@@ -262,7 +278,7 @@ Hard rules:
     messages: [
       {
         role: "user",
-        content: `PROGRAM OR ACCOUNT: ${args.accountName ?? "(not named)"}
+        content: `COMPANY: ${args.company ?? args.accountName ?? "(not named)"}
 
 WHAT THE USER PASTED IN:
 ${args.input}

@@ -58,9 +58,10 @@ narrative pillars last.
 7. **Compete**, fills a gap an ATS cannot
 8. **Impress**, candidate experience and employer brand
 
-Where the guide uses a research average in `{curly braces}`, such as messages per journey or
-minutes saved per message, the app supplies the Abode figure and lists it under "Numbers we
-estimated" whenever a calculation leaned on one.
+Seven inputs are supplied by the tool rather than asked for: questions per intern (5), minutes per
+question (15) and minutes per message (1) are Estimates, while messages per journey (8.4), intern
+NPS (64), admin NPS (58) and survey participation (70%) are Abode averages. Every one a calculation
+touches is listed under "Numbers Abode supplied" with its provenance.
 
 ## Design
 

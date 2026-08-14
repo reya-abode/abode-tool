@@ -57,7 +57,7 @@ export function DocumentPreview({ document }: { document: RoiDocument }) {
             {section.formulaText && (
               <div className="mt-5 rounded-xl border-l-[3px] border-amber-200 bg-amber-100 px-4 py-3.5">
                 <p className="eyebrow text-amber-700">How we got there</p>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">
+                <p className="mt-1.5 whitespace-pre-line text-[13px] leading-relaxed text-ink-soft">
                   {section.formulaText}
                 </p>
                 {section.workedFormula && (
@@ -113,6 +113,22 @@ export function DocumentPreview({ document }: { document: RoiDocument }) {
               </ul>
             </div>
 
+            {section.costOfInaction.length > 0 && (
+              <div className="mt-4 rounded-xl border-l-[3px] border-clay-600 bg-clay-100 px-4 py-4">
+                <p className="eyebrow text-clay-600">Cost of not using Abode</p>
+                <ul className="mt-2.5 space-y-2">
+                  {section.costOfInaction.map((point, index) => (
+                    <li key={index} className="flex gap-2.5">
+                      <span
+                        aria-hidden
+                        className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-clay-600"
+                      />
+                      <span className="doc-prose text-[14.5px] text-clay-700">{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </section>
         ))}
       </div>
@@ -128,8 +144,34 @@ export function DocumentPreview({ document }: { document: RoiDocument }) {
               items={document.metricsUsed.map((metric) => `${metric.label}: ${metric.value}`)}
             />
           )}
-          {document.assumptions.length > 0 && (
-            <ListBlock title="Numbers we estimated" items={document.assumptions} />
+          {document.suppliedValues.length > 0 && (
+            <div>
+              <p className="eyebrow text-forest-500">Numbers Abode supplied</p>
+              <ul className="mt-2.5 space-y-1.5">
+                {document.suppliedValues.map((supplied) => (
+                  <li
+                    key={supplied.label}
+                    className="flex flex-wrap items-baseline gap-x-2 text-[13.5px] leading-relaxed text-ink-soft"
+                  >
+                    <span>
+                      {supplied.label}: <span className="font-semibold">{supplied.value}</span>
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                        supplied.provenance === "Estimate"
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-sage-100 text-forest-700"
+                      }`}
+                    >
+                      {supplied.provenance}
+                    </span>
+                    {supplied.source && (
+                      <span className="text-[12px] text-muted">({supplied.source})</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
           {document.setAside.length > 0 && (
             <ListBlock
