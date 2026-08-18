@@ -132,7 +132,10 @@ export default function Home() {
         </div>
 
         <div className="rise rise-2 card mb-5 p-5 sm:p-7">
-          <label htmlFor="company" className="font-display text-base font-semibold text-forest-900">
+          <label
+            htmlFor="company"
+            className="block font-display text-base font-semibold text-forest-900"
+          >
             Company
           </label>
           <input
