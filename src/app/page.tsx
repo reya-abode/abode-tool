@@ -9,6 +9,7 @@ import type { GenerateResponse, RoiDocument } from "@/lib/types";
 
 const SAMPLE = `Summer 2026 interns
 Cohort size: 240
+Platform NPS: 64
 Reneg rate: 15% last year, 6% this cycle
 People running the program: 2
 Program size last year: 140
@@ -105,8 +106,8 @@ export default function Home() {
                 Your numbers
               </label>
               <p className="mt-1 text-[13.5px] text-muted">
-                One per line works best. Cohort size, reneg rate, admins, at-risk flags,
-                conversion, offer to start.
+                One per line works best. Cohort size, platform NPS, reneg rate, admins,
+                at-risk flags, conversion, offer to start.
               </p>
             </div>
             <button
@@ -127,7 +128,7 @@ export default function Home() {
             onChange={(event) => setInput(event.target.value)}
             rows={7}
             spellCheck={false}
-            placeholder={"Cohort size: 240\nReneg rate: 15% last year, 6% now\nPeople running the program: 2"}
+            placeholder={"Cohort size: 240\nPlatform NPS: 64\nReneg rate: 15% last year, 6% now\nPeople running the program: 2"}
             className="mt-4 w-full resize-y rounded-xl border border-line bg-cream/70 px-4 py-3.5 font-mono text-[13px] leading-relaxed text-ink outline-none transition focus:border-forest-300 focus:bg-white"
           />
 

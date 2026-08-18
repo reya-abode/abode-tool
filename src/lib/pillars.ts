@@ -32,7 +32,8 @@ export type FixedKey =
   | "messagesPerJourney"
   | "internNpsAverage"
   | "industryNpsAverage"
-  | "costPerRenegedHire";
+  | "costPerRenegedHire"
+  | "fteAnnualCost";
 
 /**
  * Values the tool supplies rather than asking for. Estimates are Abode's working
@@ -95,6 +96,14 @@ export const FIXED_INPUTS: FixedInput[] = [
     provenance: "Estimate",
     source: "",
   },
+  {
+    key: "fteAnnualCost",
+    label: "Fully loaded cost of one FTE",
+    value: 80000,
+    display: "$80,000",
+    provenance: "Estimate",
+    source: "",
+  },
 ];
 
 export const FIXED_BY_KEY: Record<FixedKey, FixedInput> = Object.fromEntries(
@@ -106,6 +115,7 @@ export const HOURS_PER_FTE_YEAR = 2080;
 
 export type MetricKey =
   | "cohortSize"
+  | "platformNpsScore"
   | "baselineRenegRate"
   | "currentRenegRate"
   | "adminHeadcount"
@@ -124,13 +134,14 @@ export type Metrics = Partial<Record<MetricKey, number>>;
 export type MetricSpec = {
   key: MetricKey;
   label: string;
-  unit: "count" | "percent" | "usd" | "days" | "months";
+  unit: "count" | "percent" | "usd" | "days" | "months" | "score";
   /** Aliases the parser and the AI use to recognise this number in what you paste. */
   aliases: string[];
 };
 
 export const METRIC_SPECS: MetricSpec[] = [
   { key: "cohortSize", label: "Cohort size", unit: "count", aliases: ["cohort size", "cohort", "interns", "intern count", "candidates", "program size", "class size"] },
+  { key: "platformNpsScore", label: "Platform NPS", unit: "score", aliases: ["platform nps", "abode nps", "program nps", "nps", "net promoter", "nps score", "intern nps"] },
   { key: "baselineRenegRate", label: "Reneg rate before Abode", unit: "percent", aliases: ["baseline reneg rate", "reneg rate before", "previous reneg rate", "historical reneg", "reneg baseline"] },
   { key: "currentRenegRate", label: "Reneg rate now", unit: "percent", aliases: ["current reneg rate", "reneg rate now", "reneg rate", "renege rate", "reneg"] },
   { key: "adminHeadcount", label: "People running the program", unit: "count", aliases: ["admin headcount", "admins", "program admins", "coordinators", "team size", "fte"] },
@@ -224,12 +235,12 @@ export const PILLARS: Pillar[] = [
     roiMeaning:
       "The pre-day-one experience that makes interns show up ready and connected, measured as the Abode intern NPS average against the typical early-careers benchmark.",
     formulaLabel: "Intern sentiment",
-    formulaText: "Intern sentiment = 64 Abode average vs 32 typical industry average",
+    formulaText: "Intern sentiment = [platform NPS] vs 32 typical industry average",
     required: [],
-    optional: [],
+    optional: ["platformNpsScore"],
     businessCase: [
       "How Abode produces this: the pre-day-one Journey delivers Templates, Tasks and Resources on a schedule, and the Journey Survey captures how the Cohort rates the experience while it is still running.",
-      "What the number represents: interns across Abode programs return an NPS of {abodeNps}, against a typical early-careers benchmark of {industryNps}, so the platform roughly doubles how candidates rate the stretch between offer and start.",
+      "What the number represents: interns on the Abode platform return an NPS of {abodeNps}, against a typical early-careers benchmark of {industryNps}, so the platform roughly {multiple}× how candidates rate the stretch between offer and start.",
       "Where the ROI surfaces: a Cohort that arrives already connected to the Program is the leading edge of the conversion story, and the Survey is what turns that from a belief into a number leadership can be shown.",
     ],
     costOfInaction: [
@@ -249,18 +260,19 @@ export const PILLARS: Pillar[] = [
     subtitle: "Capacity freed, framed as work rather than hours",
     roiMeaning:
       "The manual work the platform absorbs, but the ROI lands only when you express it as capacity redeployed to strategic work or headcount avoided, not as raw hours saved.",
-    formulaLabel: "Capacity freed",
+    formulaLabel: "Capacity freed in dollars",
     formulaText:
-      "Hours saved = [cohort size] × 5 questions × 15 min ÷ 60\n            + [cohort size] × 8.4 messages × 1 min ÷ 60",
+      "Hours saved = [cohort size] × 5 questions × 15 min ÷ 60\n            + [cohort size] × 8.4 messages × 1 min ÷ 60\nDollar value = hours ÷ 2,080 × $80,000",
     required: ["cohortSize"],
     optional: ["loadedHourlyCost", "adminHeadcount"],
     businessCase: [
       "How Abode produces this: a Journey is built once from a Template and then sends, staggers and chases its own communications, while Tasks, Reminders and the Resource Hub answer repeat Participant questions without a coordinator in the loop.",
-      "What the number represents: {hours} hours absorbed per cycle across {cohort} {company} Participants, which is {fte} of a full-time role at Abode's standard question and message volumes.",
-      "Where the ROI surfaces: that capacity returns to the work Abode does not automate, such as program design, mentor matching and escalations, and it is the same capacity a team would otherwise have to add as headcount to run this volume by hand.",
+      "What the number represents: {hours} hours absorbed per cycle across {cohort} {company} Participants, which is {fte} of a full-time role, or {dollars} at a fully loaded cost of {fteCost} a year.",
+      "Where the ROI surfaces: that capacity returns to the work Abode does not automate, such as program design, mentor matching and escalations, and it is the same {dollars} a team would otherwise have to add as headcount to run this volume by hand.",
+      "Additional time saved: the figure above counts only the sends and questions themselves. It does not count chasing Participants who never reply, which is the slowest part of running a Program by hand, so the real capacity returned to {company} is larger than {hours} hours.",
     ],
     costOfInaction: [
-      "Without Abode, those {hours} hours a cycle stay on the team's calendar as manual sends, chases and the same questions answered one Participant at a time.",
+      "Without Abode, those {hours} hours a cycle stay on the team's calendar as manual sends, chases and the same questions answered one Participant at a time, plus the unanswered Participants someone has to keep chasing.",
       "Program design, mentor matching and escalations then get whatever time is left over, which is usually the work that gets cut first.",
     ],
     groundedIn:
@@ -383,13 +395,13 @@ export const PILLARS: Pillar[] = [
     subtitle: "Candidate experience and employer brand",
     roiMeaning:
       "The experience shapes CSAT and NPS and employer reputation, and the early-career cohort is vocal, so it feeds next year's applicant quality and volume. Usually a supporting narrative under Connect.",
-    formulaLabel: "",
-    formulaText: "",
+    formulaLabel: "Intern sentiment",
+    formulaText: "Intern sentiment = [platform NPS] vs 32 typical industry average",
     required: [],
-    optional: [],
+    optional: ["platformNpsScore"],
     businessCase: [
       "How Abode produces this: between offer and start the Journey is the main point of contact with the employer, so the Templates, Resources and Tasks a Participant sees carry most of the impression they form before they arrive.",
-      "What this covers: the experience {company} gives a Cohort is what they describe to peers, mentors and campus contacts, and it is the part of the employer brand a Program can actually control.",
+      "What the number represents: an NPS of {abodeNps} against a typical early-careers benchmark of {industryNps} is the clearest read on how {company} Participants describe the experience to peers, mentors and campus contacts.",
       "Where the ROI surfaces: early-career candidates discuss their experience publicly on LinkedIn, Handshake and campus, so it reaches applicant quality and volume in the following hiring cycle rather than this one.",
     ],
     costOfInaction: [

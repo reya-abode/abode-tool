@@ -70,6 +70,22 @@ export function companyLabel(company: string | null | undefined): string {
   return trimmed || "this program";
 }
 
+/** Platform NPS against the industry benchmark. Shared by Connect and Impress. */
+function npsComparison(metrics: Metrics, fixedUsed: FixedKey[]) {
+  const supplied = metrics.platformNpsScore;
+  const nps = supplied !== undefined ? supplied : FIXED_BY_KEY.internNpsAverage.value;
+  if (supplied === undefined) fixedUsed.push("internNpsAverage");
+  const industry = FIXED_BY_KEY.industryNpsAverage.value;
+  fixedUsed.push("industryNpsAverage");
+  return {
+    nps,
+    industry,
+    supplied: supplied !== undefined,
+    delta: nps - industry,
+    multiple: nps / industry,
+  };
+}
+
 export function computePillar(
   pillarId: PillarId,
   metrics: Metrics,
@@ -134,30 +150,28 @@ export function computePillar(
     }
 
     case "connect": {
-      const abodeNps = FIXED_BY_KEY.internNpsAverage;
-      const industryNps = FIXED_BY_KEY.industryNpsAverage;
-      fixedUsed.push("internNpsAverage", "industryNpsAverage");
-
-      const delta = abodeNps.value - industryNps.value;
-      const multiple = abodeNps.value / industryNps.value;
+      const c = npsComparison(metrics, fixedUsed);
       const tokens = {
         company: org,
-        abodeNps: num(abodeNps.value),
-        industryNps: num(industryNps.value),
-        delta: num(delta),
-        multiple: num(multiple, 1),
+        abodeNps: num(c.nps, 1),
+        industryNps: num(c.industry),
+        delta: num(c.delta, 1),
+        multiple: num(c.multiple, 1),
       };
       return {
         ...base,
-        headline: `NPS ${num(abodeNps.value)} vs ${num(industryNps.value)}`,
-        raw: abodeNps.value,
-        workedFormula: `${num(abodeNps.value)} Abode average vs ${num(industryNps.value)} typical industry average = ${num(delta)} points higher`,
+        headline: `NPS ${num(c.nps, 1)} vs ${num(c.industry)}`,
+        raw: c.nps,
+        workedFormula: `${num(c.nps, 1)} platform NPS vs ${num(c.industry)} typical industry average = ${num(c.delta, 1)} points higher`,
         figures: [
-          { label: "Intern NPS, Abode average", value: num(abodeNps.value) },
-          { label: "Intern NPS, typical industry", value: num(industryNps.value) },
+          {
+            label: c.supplied ? "Platform NPS" : "Platform NPS, Abode average",
+            value: num(c.nps, 1),
+          },
+          { label: "Intern NPS, typical industry", value: num(c.industry) },
           {
             label: "Difference",
-            value: `${num(delta)} points higher, ${num(multiple, 1)}× the industry benchmark`,
+            value: `${num(c.delta, 1)} points higher, ${num(c.multiple, 1)}× the industry benchmark`,
           },
         ],
         businessCase: fillAll(pillar.businessCase, tokens),
@@ -183,13 +197,18 @@ export function computePillar(
       const questionHours = Math.round((cohort * questions * minsPerQuestion) / 60);
       const messageHours = Math.round((cohort * messages * minsPerMessage) / 60);
       const hours = questionHours + messageHours;
-      const fte = hours / HOURS_PER_FTE_YEAR;
+      // The FTE share is rounded before pricing, so FTE x annual cost matches the dollar shown.
+      const fte = Math.round((hours / HOURS_PER_FTE_YEAR) * 100) / 100;
       const fteLabel = `${num(fte, 2)} FTE`;
+      const fteCost = FIXED_BY_KEY.fteAnnualCost.value;
+      fixedUsed.push("fteAnnualCost");
+      const dollars = fte * fteCost;
 
       const figures: ComputedFigure[] = [
         { label: "Questions answered for you", value: `${num(questionHours, 0)} hours` },
         { label: "Message work absorbed", value: `${num(messageHours, 0)} hours` },
         { label: "Capacity freed per cycle", value: `${num(hours, 0)} hours (${fteLabel})` },
+        { label: "Capacity freed in dollars", value: usd(dollars) },
       ];
       if (metrics.loadedHourlyCost !== undefined) {
         figures.push({
@@ -198,12 +217,19 @@ export function computePillar(
         });
       }
 
-      const tokens = { company: org, hours: num(hours, 0), fte: fteLabel, cohort: num(cohort) };
+      const tokens = {
+        company: org,
+        hours: num(hours, 0),
+        fte: fteLabel,
+        cohort: num(cohort),
+        dollars: usd(dollars),
+        fteCost: usd(fteCost),
+      };
       return {
         ...base,
-        headline: `${num(hours, 0)} hours ≈ ${fteLabel}`,
-        raw: hours,
-        workedFormula: `${num(cohort)} × ${questions} × ${minsPerQuestion} min ÷ 60 + ${num(cohort)} × ${messages} × ${minsPerMessage} min ÷ 60 = ${num(hours, 0)} hours`,
+        headline: usd(dollars),
+        raw: dollars,
+        workedFormula: `${num(cohort)} × ${questions} × ${minsPerQuestion} min ÷ 60 + ${num(cohort)} × ${messages} × ${minsPerMessage} min ÷ 60 = ${num(hours, 0)} hours\n${num(hours, 0)} ÷ ${num(HOURS_PER_FTE_YEAR)} = ${fteLabel} × ${usd(fteCost)} = ${usd(dollars)}`,
         figures,
         businessCase: fillAll(pillar.businessCase, tokens),
         costOfInaction: fillAll(pillar.costOfInaction, tokens),
@@ -347,15 +373,29 @@ export function computePillar(
     }
 
     case "impress": {
-      // Pillar 8 carries no numbers and no rows, only the value and cost bullets.
-      const tokens = { company: org };
+      const c = npsComparison(metrics, fixedUsed);
+      const tokens = {
+        company: org,
+        abodeNps: num(c.nps, 1),
+        industryNps: num(c.industry),
+        delta: num(c.delta, 1),
+        multiple: num(c.multiple, 1),
+      };
       return {
         ...base,
-        headline: "",
-        workedFormula: "",
-        figures: [],
+        headline: `NPS ${num(c.nps, 1)} vs ${num(c.industry)}`,
+        raw: c.nps,
+        workedFormula: `${num(c.nps, 1)} platform NPS vs ${num(c.industry)} typical industry average = ${num(c.delta, 1)} points higher`,
+        figures: [
+          {
+            label: c.supplied ? "Platform NPS" : "Platform NPS, Abode average",
+            value: num(c.nps, 1),
+          },
+          { label: "Intern NPS, typical industry", value: num(c.industry) },
+        ],
         businessCase: fillAll(pillar.businessCase, tokens),
         costOfInaction: fillAll(pillar.costOfInaction, tokens),
+        fixedUsed,
       };
     }
   }
