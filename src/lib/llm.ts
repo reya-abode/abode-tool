@@ -168,16 +168,6 @@ const NARRATIVE_SCHEMA = {
       type: "string",
       description: "One short line under the title, such as 'Summer 2026 cohort'.",
     },
-    headline: {
-      type: "string",
-      description:
-        "One sentence, 20 words or fewer, leading with the biggest concrete number. This is the line a VP reads if they read nothing else.",
-    },
-    opening: {
-      type: "string",
-      description:
-        "Around 55 words saying what this program uses Abode for and which pillars carry its value. Plain prose, no headings, no bullets.",
-    },
     sections: {
       type: "array",
       description: "One entry per selected pillar, same order as given.",
@@ -197,7 +187,7 @@ const NARRATIVE_SCHEMA = {
       },
     },
   },
-  required: ["title", "subtitle", "headline", "opening", "sections"],
+  required: ["title", "subtitle", "sections"],
   additionalProperties: false,
 } as const;
 
@@ -254,8 +244,7 @@ is explanation and context, never arithmetic.
 Hard rules:
 - Every number you write must appear exactly as supplied in the computed figures. Do not
   recompute, re-round, extrapolate, or introduce a number that is not there.
-- Word budget: the opening runs about 50 words. Each of the ${args.sections.length} pillar sections is
-  three bullets of 30 to 45 words each.
+- Word budget: each of the ${args.sections.length} pillar sections is three bullets of 30 to 45 words each.
 - Capitalise Abode feature names (Journey, Template, Task, Resource Hub, Reminder, Survey,
   Engagement Tracking, Reneg Risk Flag, Dashboard, Program, Cohort, Participant) so readers can
   tell the product apart from ordinary nouns.

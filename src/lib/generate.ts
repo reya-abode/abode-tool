@@ -1,5 +1,4 @@
 import {
-  companyLabel,
   computePillar,
   eligiblePillars,
   parseMetricsHeuristically,
@@ -77,6 +76,7 @@ function buildSection(
     businessCase: result.businessCase,
     costOfInaction: result.costOfInaction,
     ...(result.scaleControl ? { scaleControl: result.scaleControl } : {}),
+    ...(result.dollarValue !== undefined ? { dollarValue: result.dollarValue } : {}),
   };
 }
 
@@ -98,10 +98,9 @@ function assemble(args: {
   company: string | null;
   title: string;
   subtitle: string;
-  headline: string;
-  opening: string;
   sections: DocumentSection[];
   gaps: string[];
+  contractValue: number | null;
   metrics: Metrics;
   setAside: { pillarName: string; reason: string }[];
   engine: "claude" | "deterministic";
@@ -122,16 +121,15 @@ function assemble(args: {
     };
   });
 
-  const prose = [args.opening, ...args.sections.flatMap((s) => s.businessCase)].join(" ");
+  const prose = args.sections.flatMap((s) => s.businessCase).join(" ");
 
   return {
     accountName: args.accountName,
     company: args.company,
     title: args.title,
     subtitle: args.subtitle,
-    headline: args.headline,
-    opening: args.opening,
     sections: args.sections,
+    contractValue: args.contractValue,
     gaps: args.gaps,
     suppliedValues,
     metricsUsed: (Object.keys(args.metrics) as MetricKey[])
@@ -154,38 +152,25 @@ function plainDocument(args: {
   pillarIds: PillarId[];
   engineNote: string;
   company: string | null;
+  contractValue: number | null;
   accountName?: string | null;
 }): RoiDocument {
   const sections = args.pillarIds.map((id) => buildSection(id, args.metrics, args.company));
-  const lead = sections[0];
-  const org = companyLabel(args.company);
   const named = (args.company ?? "").trim();
-
-  const opening = sections.length
-    ? `${org === "this program" ? "This program's" : `${org}'s`} value shows up strongest in ${listNames(sections.map((s) => s.pillarName))}. Every number below runs through the formula for its pillar, using the numbers provided plus the Abode averages and estimates listed at the end, and each pillar sets out how Abode produces the result and where the ROI surfaces.`
-    : `We could not build a number from these inputs yet. Cohort size, the reneg rate before and after Abode, and the cost of one reneged hire will get you Protect, which is the pillar every account tracks.`;
 
   return assemble({
     accountName: args.accountName ?? named ?? null,
     company: args.company,
     title: named ? `${named} ROI story` : "Your ROI story",
     subtitle: "Built from your program numbers",
-    headline: lead
-      ? `${lead.pillarName}: ${lead.headline}.`
-      : "Add a few numbers to build your first pillar.",
-    opening,
     sections,
     gaps: buildGaps(args.pillarIds, args.metrics),
+    contractValue: args.contractValue,
     metrics: args.metrics,
     setAside: [],
     engine: "deterministic",
     engineNote: args.engineNote,
   });
-}
-
-function listNames(names: string[]): string {
-  if (names.length <= 1) return names[0] ?? "";
-  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
 /** Nothing is shown when the local engine writes the story. */
@@ -194,8 +179,13 @@ const AI_OFF_NOTE = "";
 export async function generateDocument(
   input: string,
   companyInput?: string,
+  contractInput?: number,
 ): Promise<RoiDocument> {
   const company = (companyInput ?? "").trim() || null;
+  const contractValue =
+    contractInput !== undefined && Number.isFinite(contractInput) && contractInput > 0
+      ? contractInput
+      : null;
   if (!hasCredentials()) {
     const metrics = parseMetricsHeuristically(input);
     return plainDocument({
@@ -203,6 +193,7 @@ export async function generateDocument(
       pillarIds: eligiblePillars(metrics),
       engineNote: AI_OFF_NOTE,
       company,
+      contractValue,
     });
   }
 
@@ -216,6 +207,7 @@ export async function generateDocument(
       pillarIds: eligiblePillars(metrics),
       engineNote: AI_OFF_NOTE,
       company,
+      contractValue,
     });
   }
 
@@ -228,6 +220,7 @@ export async function generateDocument(
       metrics,
       pillarIds: [],
       company,
+      contractValue,
       accountName: extraction.accountName,
       engineNote:
         "We read your notes but could not complete a formula yet. Add one hard number to get started.",
@@ -272,10 +265,9 @@ export async function generateDocument(
       company,
       title: narrative.title,
       subtitle: narrative.subtitle,
-      headline: narrative.headline,
-      opening: narrative.opening,
       sections: written,
       gaps: buildGaps(pillarIds, metrics),
+      contractValue,
       metrics,
       setAside,
       engine: "claude",
@@ -286,6 +278,7 @@ export async function generateDocument(
       metrics,
       pillarIds,
       company,
+      contractValue,
       accountName: extraction.accountName,
       engineNote: AI_OFF_NOTE,
     });

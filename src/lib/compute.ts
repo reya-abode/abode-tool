@@ -35,6 +35,8 @@ export type PillarResult = {
   raw?: number;
   /** Slider configuration, present only on Scale. */
   scaleControl?: ScaleControl;
+  /** Money this pillar represents, for the total at the top of the document. */
+  dollarValue?: number;
 };
 
 const usd = (n: number) =>
@@ -158,6 +160,46 @@ export function scaleResult(args: {
   };
 }
 
+/** Pillars whose output is money the company keeps. */
+export const SAVINGS_PILLARS: PillarId[] = ["protect", "save", "scale"];
+
+/** Total saved, summing the money pillars. Recomputed whenever the Scale slider moves. */
+export function totalSaved(
+  sections: { pillarId: PillarId; dollarValue?: number }[],
+): number {
+  return sections
+    .filter((section) => SAVINGS_PILLARS.includes(section.pillarId))
+    .reduce((sum, section) => sum + (section.dollarValue ?? 0), 0);
+}
+
+/** Money formatting for the total block, shared by the screen and the PDF. */
+export function formatMoney(value: number): string {
+  return usd(value);
+}
+
+/**
+ * How the total saved compares with what the account pays. Returns null when no contract
+ * value has been entered.
+ */
+export function contractComparison(
+  total: number,
+  contract: number | null,
+): { headline: string; detail: string } | null {
+  if (!contract || contract <= 0) return null;
+  const multiple = total / contract;
+  const net = total - contract;
+  if (net >= 0) {
+    return {
+      headline: `${multiple.toFixed(1)}x the contract value`,
+      detail: `Abode returns ${usd(total)} against a contract of ${usd(contract)}, a net gain of ${usd(net)}.`,
+    };
+  }
+  return {
+    headline: `${multiple.toFixed(1)}x the contract value`,
+    detail: `Abode returns ${usd(total)} against a contract of ${usd(contract)}, which is ${usd(Math.abs(net))} short of covering it on the pillars priced so far.`,
+  };
+}
+
 /** Re-runs Scale for a new slider target and returns an updated copy of the document. */
 export function applyScaleTarget<
   T extends {
@@ -169,6 +211,7 @@ export function applyScaleTarget<
       businessCase: string[];
       costOfInaction: string[];
       scaleControl?: ScaleControl;
+      dollarValue?: number;
     }[];
   },
 >(document: T, target: number, company?: string | null): T {
@@ -185,6 +228,7 @@ export function applyScaleTarget<
       return {
         ...section,
         headline: result.headline,
+        dollarValue: result.value,
         workedFormula: result.workedFormula,
         figures: result.figures,
         businessCase: result.businessCase,
@@ -246,6 +290,7 @@ export function computePillar(
         ...base,
         headline: usd(dollars),
         raw: dollars,
+        dollarValue: dollars,
         workedFormula: `( ${pct(baseline)} − ${pct(current)} ) × ${num(cohort)} × ${usd(cost)} = ${usd(dollars)}`,
         figures: [
           { label: "Reneg rate", value: `${pct(baseline)} down to ${pct(current)}` },
@@ -338,6 +383,7 @@ export function computePillar(
         ...base,
         headline: usd(dollars),
         raw: dollars,
+        dollarValue: dollars,
         workedFormula: `${num(cohort)} × ${questions} × ${minsPerQuestion} min ÷ 60 + ${num(cohort)} × ${messages} × ${minsPerMessage} min ÷ 60 = ${num(hours, 0)} hours\n${num(hours, 0)} ÷ ${num(HOURS_PER_FTE_YEAR)} = ${fteLabel} × ${usd(fteCost)} = ${usd(dollars)}`,
         figures,
         businessCase: fillAll(pillar.businessCase, tokens),
@@ -361,6 +407,7 @@ export function computePillar(
         ...base,
         headline: result.headline,
         raw: result.value,
+        dollarValue: result.value,
         workedFormula: result.workedFormula,
         figures: result.figures,
         businessCase: result.businessCase,
@@ -400,20 +447,26 @@ export function computePillar(
     case "improve": {
       const cohort = metrics.cohortSize!;
       const rate = asPercent(metrics.fteConversionRatePct!);
+      const benchmark = FIXED_BY_KEY.benchmarkConversionRate.value;
       const externalCost = FIXED_BY_KEY.costPerHire.value;
       const internCost = FIXED_BY_KEY.costPerInternConversion.value;
-      fixedUsed.push("costPerHire", "costPerInternConversion");
+      fixedUsed.push("benchmarkConversionRate", "costPerHire", "costPerInternConversion");
 
-      // Roles are rounded before pricing, so roles x saving matches the dollar shown.
-      const roles = Math.round(((cohort * rate) / 100) * 10) / 10;
       const savingPerRole = externalCost - internCost;
-      const value = roles * savingPerRole;
+      // Roles are rounded before pricing, so roles x saving matches the dollar shown.
+      const extraRoles = Math.round(((cohort * (rate - benchmark)) / 100) * 10) / 10;
+      const value = extraRoles * savingPerRole;
+      const ahead = extraRoles >= 0;
 
       const figures: ComputedFigure[] = [
-        { label: "Employee to FTE conversion rate", value: pct(rate) },
-        { label: "Roles filled from the intern pool", value: num(roles, 1) },
+        { label: "Intern to FTE conversion rate", value: pct(rate) },
+        { label: "Benchmark conversion rate", value: pct(benchmark) },
+        {
+          label: ahead ? "Extra roles above benchmark" : "Roles below benchmark",
+          value: num(Math.abs(extraRoles), 1),
+        },
         { label: "Saving per role", value: `${usd(externalCost)} − ${usd(internCost)} = ${usd(savingPerRole)}` },
-        { label: "Value of roles filled", value: usd(value) },
+        { label: ahead ? "Value of the conversion lead" : "Value still on the table", value: usd(Math.abs(value)) },
       ];
       if (metrics.daysFasterRamp !== undefined) {
         figures.push({
@@ -430,18 +483,24 @@ export function computePillar(
         company: org,
         cohort: num(cohort),
         rate: num(rate, 1),
-        roles: num(roles, 1),
-        value: usd(value),
+        benchmark: num(benchmark, 1),
+        roles: num(Math.abs(extraRoles), 1),
+        direction: ahead ? "above" : "below",
+        value: usd(Math.abs(value)),
         externalCost: usd(externalCost),
         internCost: usd(internCost),
         saving: usd(savingPerRole),
         rampClause,
+        roiClause: ahead
+          ? `${usd(value)} that ${org} does not spend on external entry-level recruiting, because those roles were filled from a pipeline the internship program had already paid for.`
+          : `converting at the NACE benchmark would be worth ${usd(Math.abs(value))} more to ${org}, which is the gap a stronger pre-start experience is built to close.`,
       };
       return {
         ...base,
         headline: usd(value),
         raw: value,
-        workedFormula: `${num(cohort)} × ${pct(rate)} = ${num(roles, 1)} roles\n${num(roles, 1)} × ( ${usd(externalCost)} − ${usd(internCost)} ) = ${usd(value)}`,
+        dollarValue: value,
+        workedFormula: `${num(cohort)} × ( ${pct(rate)} − ${pct(benchmark)} ) = ${num(extraRoles, 1)} roles\n${num(extraRoles, 1)} × ${usd(savingPerRole)} = ${usd(value)}`,
         figures,
         businessCase: fillAll(pillar.businessCase, tokens),
         costOfInaction: fillAll(pillar.costOfInaction, tokens),

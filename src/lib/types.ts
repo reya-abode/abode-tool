@@ -22,6 +22,8 @@ export type DocumentSection = {
   costOfInaction: string[];
   /** Slider configuration, present only on Scale. */
   scaleControl?: ScaleControl;
+  /** Money this pillar represents, for the total at the top of the document. */
+  dollarValue?: number;
 };
 
 /** A value the tool supplied, with where it came from. */
@@ -38,9 +40,9 @@ export type RoiDocument = {
   company: string | null;
   title: string;
   subtitle: string;
-  headline: string;
-  opening: string;
   sections: DocumentSection[];
+  /** Annual Abode contract value, compared against the total saved. */
+  contractValue: number | null;
   /** What to collect next, one line per pillar that did not make the story. */
   gaps: string[];
   /** Fixed values the maths leaned on, each labelled Estimate or Abode average. */
@@ -54,7 +56,7 @@ export type RoiDocument = {
   generatedAt: string;
 };
 
-export type GenerateRequest = { input: string; company?: string };
+export type GenerateRequest = { input: string; company?: string; contractValue?: number };
 
 export type GenerateResponse =
   | { ok: true; document: RoiDocument }
@@ -64,8 +66,6 @@ export type GenerateResponse =
 export type PillarNarrative = {
   title: string;
   subtitle: string;
-  headline: string;
-  opening: string;
   sections: { pillarId: PillarId; businessCase: string[] }[];
 };
 

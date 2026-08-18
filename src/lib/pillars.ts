@@ -34,6 +34,7 @@ export type FixedKey =
   | "industryNpsAverage"
   | "costPerHire"
   | "costPerInternConversion"
+  | "benchmarkConversionRate"
   | "fteAnnualCost"
   | "adminAnnualCost"
   | "followUpRate";
@@ -104,6 +105,14 @@ export const FIXED_INPUTS: FixedInput[] = [
     label: "Cost per intern conversion",
     value: 1500,
     display: "$1,500",
+    provenance: "Industry average",
+    source: "NACE",
+  },
+  {
+    key: "benchmarkConversionRate",
+    label: "Benchmark intern to FTE conversion rate",
+    value: 63.1,
+    display: "63.1%",
     provenance: "Industry average",
     source: "NACE",
   },
@@ -368,13 +377,13 @@ export const PILLARS: Pillar[] = [
       "Intern to full-time conversion is what TA leadership is actually measured on, and every account named it as the number one success metric. Often aspired to rather than measured yet, so flag which one you have.",
     formulaLabel: "Value of roles filled from the intern pool",
     formulaText:
-      "Roles filled from intern pool = [program size] × [employee to FTE conversion rate]\nValue ($) = roles filled × ( [cost per external entry-level hire] − [cost per intern conversion] )",
+      "Extra roles = [program size] × ( [intern to FTE conversion rate] − [benchmark conversion rate] )\nValue ($) = extra roles × [saving per role]",
     required: ["cohortSize", "fteConversionRatePct"],
     optional: ["daysFasterRamp"],
     businessCase: [
       "How Abode produces this: Participants who work through the Journey arrive with context, expectations and internal connections already established, which shapes how quickly they contribute and whether they accept a return offer.",
-      "What the number represents: a conversion rate of {rate}% across {cohort} Participants fills {roles} full-time roles from the intern pool, each costing {internCost} to convert against {externalCost} to hire externally{rampClause}.",
-      "Where the ROI surfaces: {value} that {company} does not spend on external entry-level recruiting, because the sourcing, screening and interviewing behind those roles was already paid for by the internship program.",
+      "What the number represents: converting at {rate}% against the NACE benchmark of {benchmark}% across {cohort} Participants is {roles} roles {direction} the market, each worth the {saving} gap between an external hire at {externalCost} and an intern conversion at {internCost}{rampClause}.",
+      "Where the ROI surfaces: {roiClause}",
     ],
     costOfInaction: [
       "Without Abode, conversion gets measured after the fact with nothing to attribute it to, so the program cannot show which candidates it actually influenced.",

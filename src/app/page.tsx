@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { AbodeMark } from "@/components/AbodeMark";
 import { DocumentPreview } from "@/components/DocumentPreview";
 import { PillarLadder } from "@/components/PillarLadder";
-import { applyScaleTarget } from "@/lib/compute";
+import { applyScaleTarget, contractComparison, formatMoney, totalSaved } from "@/lib/compute";
 import { downloadPdf } from "@/lib/pdf";
 import type { GenerateResponse, RoiDocument } from "@/lib/types";
 
@@ -25,12 +25,27 @@ export default function Home() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scaleTarget, setScaleTarget] = useState<number | null>(null);
+  const [contract, setContract] = useState("");
 
-  // The slider rewrites the Scale section, so the preview and the PDF stay in step.
+  const contractValue = useMemo(() => {
+    const parsed = Number(contract.replace(/[^0-9.]/g, ""));
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }, [contract]);
+
+  // The slider rewrites the Scale section and the contract box feeds the total, so the
+  // preview and the PDF both stay in step with what is on screen.
   const shown = useMemo(() => {
-    if (!document || scaleTarget === null) return document;
-    return applyScaleTarget(document, scaleTarget, document.company);
-  }, [document, scaleTarget]);
+    if (!document) return null;
+    const withContract = { ...document, contractValue };
+    if (scaleTarget === null) return withContract;
+    return applyScaleTarget(withContract, scaleTarget, document.company);
+  }, [document, scaleTarget, contractValue]);
+
+  const total = useMemo(() => (shown ? totalSaved(shown.sections) : 0), [shown]);
+  const comparison = useMemo(
+    () => (total > 0 ? contractComparison(total, contractValue) : null),
+    [total, contractValue],
+  );
 
   const matched = useMemo(
     () => new Set(document?.sections.map((section) => section.pillarId) ?? []),
@@ -44,7 +59,7 @@ export default function Home() {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ input, company }),
+        body: JSON.stringify({ input, company, ...(contractValue ? { contractValue } : {}) }),
       });
       const payload = (await response.json()) as GenerateResponse;
       if (!payload.ok) {
@@ -90,19 +105,61 @@ export default function Home() {
       </section>
 
       <main className="mx-auto -mt-20 w-full max-w-[1240px] flex-1 px-5 pb-16 sm:px-8">
+        <div className="rise card mb-5 border-l-[3px] border-forest-500 bg-sage-100 p-5 sm:p-7">
+          <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+            <div>
+              <p className="eyebrow text-forest-700">Total saved with Abode</p>
+              <p className="mt-2 font-display text-[40px] font-semibold leading-none text-forest-900">
+                {formatMoney(total)}
+              </p>
+              <p className="mt-2.5 max-w-xl text-[13.5px] leading-relaxed text-forest-700">
+                {total > 0
+                  ? "Protect, Save and Scale added together."
+                  : "Protect, Save and Scale added together. Build the story below to fill this in."}
+              </p>
+            </div>
+            {comparison && (
+              <div className="rounded-xl bg-white/70 px-4 py-3">
+                <p className="font-display text-[17px] font-semibold text-forest-900">
+                  {comparison.headline}
+                </p>
+                <p className="mt-1 max-w-xs text-[13px] leading-relaxed text-forest-700">
+                  {comparison.detail}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="rise rise-2 card mb-5 p-5 sm:p-7">
           <label htmlFor="company" className="font-display text-base font-semibold text-forest-900">
             Company
           </label>
-          <p className="mt-1 text-[13.5px] text-muted">
-            The name is used throughout the story, so the document reads as theirs.
-          </p>
           <input
             id="company"
             type="text"
             value={company}
             onChange={(event) => setCompany(event.target.value)}
             placeholder="Abode"
+            className="mt-3 w-full max-w-md rounded-xl border border-line bg-cream/70 px-4 py-2.5 text-[14px] text-ink outline-none transition focus:border-forest-300 focus:bg-white"
+          />
+
+          <label
+            htmlFor="contract"
+            className="mt-6 block font-display text-base font-semibold text-forest-900"
+          >
+            Contract value
+          </label>
+          <p className="mt-1 text-[13.5px] text-muted">
+            The annual Abode contract, compared against the total saved above.
+          </p>
+          <input
+            id="contract"
+            type="text"
+            inputMode="numeric"
+            value={contract}
+            onChange={(event) => setContract(event.target.value)}
+            placeholder="$50,000"
             className="mt-3 w-full max-w-md rounded-xl border border-line bg-cream/70 px-4 py-2.5 text-[14px] text-ink outline-none transition focus:border-forest-300 focus:bg-white"
           />
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { contractComparison, formatMoney, totalSaved } from "@/lib/compute";
 import type { RoiDocument } from "@/lib/types";
 
 export function DocumentPreview({
@@ -16,6 +17,8 @@ export function DocumentPreview({
     month: "long",
     day: "numeric",
   });
+  const total = totalSaved(document.sections);
+  const comparison = contractComparison(total, document.contractValue);
 
   return (
     <article className="card overflow-hidden">
@@ -28,12 +31,15 @@ export function DocumentPreview({
           {document.subtitle} · {stamp}
         </p>
 
-        <p className="mt-6 rounded-xl bg-sage-100 px-5 py-4 font-display text-[17px] font-semibold leading-snug text-forest-900">
-          {document.headline}
-        </p>
-
-        <div className="doc-prose mt-5 text-[15.5px] text-ink">
-          <p>{document.opening}</p>
+        <div className="mt-6 rounded-xl bg-sage-100 px-5 py-5">
+          <p className="eyebrow text-forest-700">Total saved with Abode</p>
+          <p className="mt-1.5 font-display text-[32px] font-semibold leading-none text-forest-900">
+            {formatMoney(total)}
+          </p>
+          <p className="mt-2.5 text-[13.5px] leading-relaxed text-forest-700">
+            Protect, Save and Scale added together.
+            {comparison ? ` ${comparison.detail}` : ""}
+          </p>
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { contractComparison, formatMoney, totalSaved } from "./compute";
 import type { RoiDocument } from "./types";
 
 /** The document is set at 1.15 line spacing throughout. */
@@ -27,9 +28,7 @@ export function buildPdf(document: RoiDocument): jsPDF {
   const ctx: Ctx = { doc, y: MARGIN.top, page: 1 };
 
   drawMasthead(ctx, document);
-  drawHeadline(ctx, document);
-  paragraph(ctx, document.opening, { size: 10.5, font: ["helvetica", "normal"] });
-  space(ctx, 6);
+  drawTotal(ctx, document);
 
   document.sections.forEach((section, index) => {
     ensure(ctx, 150);
@@ -163,18 +162,42 @@ function drawMasthead(ctx: Ctx, document: RoiDocument): void {
   space(ctx, 16);
 }
 
-function drawHeadline(ctx: Ctx, document: RoiDocument): void {
-  const size = 13.5;
-  const { lines, height } = measure(ctx.doc, document.headline, size, ["helvetica", "bold"], CONTENT_WIDTH - 14);
-  ensure(ctx, height + 8);
-  ctx.doc.setDrawColor(...FOREST);
-  ctx.doc.setLineWidth(2);
-  ctx.doc.line(MARGIN.left, ctx.y - 2, MARGIN.left, ctx.y + height);
+/** The money block that opens the document: Protect, Save and Scale added together. */
+function drawTotal(ctx: Ctx, document: RoiDocument): void {
+  const total = totalSaved(document.sections);
+  const comparison = contractComparison(total, document.contractValue);
+  const padding = 12;
+  const innerWidth = CONTENT_WIDTH - padding * 2;
+  const note = `Protect, Save and Scale added together.${comparison ? ` ${comparison.detail}` : ""}`;
+  const body = measure(ctx.doc, note, 9, ["helvetica", "normal"], innerWidth);
+  const boxHeight = padding * 2 + 12 + 24 + body.height;
+
+  ensure(ctx, boxHeight + 14);
+  ctx.doc.setFillColor(...SAY_BG);
+  ctx.doc.rect(MARGIN.left, ctx.y, CONTENT_WIDTH, boxHeight, "F");
+  ctx.doc.setFillColor(...FOREST);
+  ctx.doc.rect(MARGIN.left, ctx.y, 2.5, boxHeight, "F");
+
+  let inner = ctx.y + padding;
+  ctx.doc.setFont("helvetica", "bold");
+  ctx.doc.setFontSize(7);
   ctx.doc.setTextColor(...FOREST);
-  lines.forEach((line, index) => {
-    ctx.doc.text(line, MARGIN.left + 14, ctx.y + size * 0.86 + index * size * LINE_SPACING);
+  ctx.doc.text("TOTAL SAVED WITH ABODE", MARGIN.left + padding, inner + 6);
+  inner += 12;
+
+  ctx.doc.setFontSize(22);
+  ctx.doc.setTextColor(...FOREST);
+  ctx.doc.text(formatMoney(total), MARGIN.left + padding, inner + 19);
+  inner += 24;
+
+  ctx.doc.setFont("helvetica", "normal");
+  ctx.doc.setFontSize(9);
+  ctx.doc.setTextColor(...INK);
+  body.lines.forEach((line, i) => {
+    ctx.doc.text(line, MARGIN.left + padding, inner + 7.7 + i * 9 * LINE_SPACING);
   });
-  ctx.y += height + 14;
+
+  ctx.y += boxHeight + 14;
 }
 
 function drawSectionHeader(ctx: Ctx, rank: number, name: string, subtitle: string): void {

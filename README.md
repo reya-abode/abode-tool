@@ -40,7 +40,7 @@ npm run dev                                        # http://localhost:3000
 | `src/lib/llm.ts` | The two Claude passes, both using structured outputs. |
 | `src/lib/generate.ts` | Matching, wording, and every fallback path. |
 | `src/lib/pdf.ts` | The PDF layout at 1.15 line spacing, paginated, with footers. |
-| `src/app/api/generate/route.ts` | `POST { input }` returns `{ ok, document }`. |
+| `src/app/api/generate/route.ts` | `POST { input, company, contractValue }` returns `{ ok, document }`. |
 | `src/components/DocumentPreview.tsx` | The document on screen, styled to match the PDF. |
 | `src/components/PillarLadder.tsx` | The eight-pillar rail that shows what matched and what is missing. |
 
@@ -61,7 +61,8 @@ narrative pillars last.
 Values the tool supplies rather than asking for. Questions per intern (5), minutes per question
 (15), minutes per message (1), the fully loaded cost of one FTE ($80,000) and the 100% follow-up
 rate on flagged interns are Estimates. Cost per external entry-level hire ($4,700), cost per
-intern conversion ($1,500) and the cost of one program admin ($80,000) come from NACE.
+intern conversion ($1,500), the benchmark intern to FTE conversion rate (63.1%) and the cost of
+one program admin ($80,000) come from NACE.
 
 Scale carries a target slider. Moving it recomputes the pillar in the browser through
 `scaleResult` in `src/lib/compute.ts`, and the download uses whatever the slider is set to, so
@@ -72,6 +73,10 @@ Abode supplied" with its provenance.
 Connect and Impress appear in every story. Connect compares the Company NPS against the typical
 industry 32, falling back to the Abode average of 64 when no figure is given. Impress always uses
 the Abode NPS of 64 against the same benchmark.
+
+The total saved sits at the top of the tool and at the top of the document, adding Protect, Save
+and Scale. Type a contract value under Company and the total is compared against it, so the
+document says what the account gets back for what it pays.
 
 ## Design
 
