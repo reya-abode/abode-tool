@@ -33,6 +33,8 @@ export type PillarResult = {
   fixedUsed: FixedKey[];
   /** Raw numeric value where one exists, for sorting / totals. */
   raw?: number;
+  /** Slider configuration, present only on Scale. */
+  scaleControl?: ScaleControl;
 };
 
 const usd = (n: number) =>
@@ -83,6 +85,113 @@ function npsComparison(metrics: Metrics, fixedUsed: FixedKey[]) {
     supplied: supplied !== undefined,
     delta: nps - industry,
     multiple: nps / industry,
+  };
+}
+
+export type ScaleControl = {
+  programSize: number;
+  admins: number;
+  adminCost: number;
+  target: number;
+  min: number;
+  max: number;
+  step: number;
+};
+
+/** Slider bounds for the Scale target, defaulting to twice the current program. */
+export function scaleControlFor(programSize: number, admins: number): ScaleControl {
+  return {
+    programSize,
+    admins,
+    adminCost: FIXED_BY_KEY.adminAnnualCost.value,
+    target: programSize * 2,
+    min: programSize,
+    max: Math.max(programSize * 5, programSize + 50),
+    step: Math.max(1, Math.round(programSize / 20)),
+  };
+}
+
+/**
+ * Scale is recomputed in the browser as the target slider moves, so the maths and the
+ * wording both live here rather than only running once on the server.
+ */
+export function scaleResult(args: {
+  programSize: number;
+  admins: number;
+  target: number;
+  company?: string | null;
+}) {
+  const pillar = PILLAR_BY_ID.scale;
+  const org = companyLabel(args.company);
+  const adminCost = FIXED_BY_KEY.adminAnnualCost.value;
+  const extraParticipants = Math.max(0, args.target - args.programSize);
+  // Admins are rounded before pricing, so the figures on screen reconcile with the total.
+  const extraAdmins =
+    Math.round(((extraParticipants * args.admins) / args.programSize) * 10) / 10;
+  const value = extraAdmins * adminCost;
+
+  const tokens = {
+    company: org,
+    cohort: num(args.programSize),
+    target: num(args.target),
+    admins: num(args.admins),
+    adminPlural: args.admins === 1 ? "" : "s",
+    extraAdmins: num(extraAdmins, 1),
+    extraAdminPlural: extraAdmins === 1 ? "" : "s",
+    adminCost: usd(adminCost),
+    value: usd(value),
+  };
+
+  return {
+    value,
+    extraAdmins,
+    headline: usd(value),
+    workedFormula: `( ( ${num(args.target)} − ${num(args.programSize)} ) × ${num(args.admins)} ÷ ${num(args.programSize)} ) × ${usd(adminCost)} = ${usd(value)}`,
+    figures: [
+      { label: "Program size today", value: `${num(args.programSize)} Participants` },
+      { label: "Target program size", value: `${num(args.target)} Participants` },
+      { label: "Extra admins needed the old way", value: num(extraAdmins, 1) },
+      { label: "Admin cost avoided", value: usd(value) },
+    ] as ComputedFigure[],
+    businessCase: fillAll(pillar.businessCase, tokens),
+    costOfInaction: fillAll(pillar.costOfInaction, tokens),
+  };
+}
+
+/** Re-runs Scale for a new slider target and returns an updated copy of the document. */
+export function applyScaleTarget<
+  T extends {
+    sections: {
+      pillarId: PillarId;
+      headline: string;
+      workedFormula: string;
+      figures: ComputedFigure[];
+      businessCase: string[];
+      costOfInaction: string[];
+      scaleControl?: ScaleControl;
+    }[];
+  },
+>(document: T, target: number, company?: string | null): T {
+  return {
+    ...document,
+    sections: document.sections.map((section) => {
+      if (section.pillarId !== "scale" || !section.scaleControl) return section;
+      const result = scaleResult({
+        programSize: section.scaleControl.programSize,
+        admins: section.scaleControl.admins,
+        target,
+        company,
+      });
+      return {
+        ...section,
+        headline: result.headline,
+        workedFormula: result.workedFormula,
+        figures: result.figures,
+        businessCase: result.businessCase,
+        costOfInaction: result.costOfInaction,
+        scaleControl: { ...section.scaleControl, target },
+      };
+    }),
   };
 }
 
@@ -240,42 +349,24 @@ export function computePillar(
     case "scale": {
       const cohort = metrics.cohortSize!;
       const admins = metrics.adminHeadcount!;
-      const ratio = cohort / admins;
-      const priorSize = metrics.priorProgramSize;
-      const priorAdmins = metrics.priorAdminHeadcount ?? admins;
-      const priorRatio = priorSize !== undefined ? priorSize / priorAdmins : undefined;
-
-      const figures: ComputedFigure[] = [
-        { label: "Interns per admin", value: `${num(ratio, 1)} : 1` },
-      ];
-      if (priorRatio !== undefined) {
-        figures.push({ label: "Last year", value: `${num(priorRatio, 1)} : 1` });
-        figures.push({
-          label: "Improvement",
-          value: `${num(ratio / priorRatio, 1)}× more Participants per admin`,
-        });
-      }
-      const priorClause =
-        priorSize !== undefined
-          ? `, up from ${num(priorSize)} on ${num(priorAdmins)} last year`
-          : "";
-
-      const tokens = {
-        company: org,
-        cohort: num(cohort),
-        admins: num(admins),
-        adminPlural: admins === 1 ? "" : "s",
-        ratio: num(ratio, 1),
-        priorClause,
-      };
+      fixedUsed.push("adminAnnualCost");
+      const control = scaleControlFor(cohort, admins);
+      const result = scaleResult({
+        programSize: cohort,
+        admins,
+        target: control.target,
+        company,
+      });
       return {
         ...base,
-        headline: `${num(ratio, 1)} : 1`,
-        raw: ratio,
-        workedFormula: `${num(cohort)} ÷ ${num(admins)} = ${num(ratio, 1)} interns per admin${priorRatio !== undefined ? ` (prior year: ${num(priorRatio, 1)})` : ""}`,
-        figures,
-        businessCase: fillAll(pillar.businessCase, tokens),
-        costOfInaction: fillAll(pillar.costOfInaction, tokens),
+        headline: result.headline,
+        raw: result.value,
+        workedFormula: result.workedFormula,
+        figures: result.figures,
+        businessCase: result.businessCase,
+        costOfInaction: result.costOfInaction,
+        scaleControl: control,
+        fixedUsed,
       };
     }
 

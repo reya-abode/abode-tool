@@ -35,6 +35,7 @@ export type FixedKey =
   | "costPerHire"
   | "costPerInternConversion"
   | "fteAnnualCost"
+  | "adminAnnualCost"
   | "followUpRate";
 
 /**
@@ -113,6 +114,14 @@ export const FIXED_INPUTS: FixedInput[] = [
     display: "$80,000",
     provenance: "Estimate",
     source: "",
+  },
+  {
+    key: "adminAnnualCost",
+    label: "Cost per program admin",
+    value: 80000,
+    display: "$80,000",
+    provenance: "Industry average",
+    source: "NACE",
   },
   {
     key: "followUpRate",
@@ -303,18 +312,19 @@ export const PILLARS: Pillar[] = [
     subtitle: "Growth without adding headcount",
     roiMeaning:
       "The program can grow, or already runs at a size, that would collapse the old manual way. We grew Nx and added no staff is a leadership-grade sentence, especially for enterprise accounts.",
-    formulaLabel: "Interns per admin",
-    formulaText: "[current program size] ÷ [admin headcount] = interns-per-admin",
+    formulaLabel: "Admin cost avoided by scaling",
+    formulaText:
+      "scaleValue = ( ( [target participants] − [program size] ) × [people running the program] ÷ [program size] ) × $80,000",
     required: ["cohortSize", "adminHeadcount"],
     optional: ["priorProgramSize", "priorAdminHeadcount"],
     businessCase: [
       "How Abode produces this: a Journey built for one Cohort applies to every Cohort after it, so growth adds delivery volume inside the Program rather than coordination work for the team running it.",
-      "What the number represents: {cohort} Participants supported by {admins} admin{adminPlural} at {company}, or {ratio} Participants per admin{priorClause}.",
+      "What the number represents: growing from {cohort} to {target} Participants the old way would take {extraAdmins} more admin{extraAdminPlural} at {adminCost} each, which is {value} of headcount {company} does not have to add.",
       "Where the ROI surfaces: Program growth stops being tied to headcount growth, so the operating cost of each additional Participant falls as the Cohort gets larger.",
     ],
     costOfInaction: [
       "Without Abode, growth means more coordinators, because an email and spreadsheet process starts dropping communications well before {cohort} Participants.",
-      "Cohort size ends up capped by admin capacity rather than by how many early-career hires the business actually wants.",
+      "Reaching {target} Participants by hand would mean carrying {value} of extra admin cost for every year the Program runs at that size.",
     ],
     groundedIn:
       "Amazon: 27,000 candidates at roughly 97% adoption, run by two people, after Outlook capped them at 10k emails a day. Energy Transfer scaled 11 interns to 95. GE Aero: a team of one at 700 to 800. Nicole at ABB ran a global rollout.",

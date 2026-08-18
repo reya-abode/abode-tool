@@ -1,3 +1,4 @@
+import type { ScaleControl } from "./compute";
 import type { MetricKey, PillarId, Provenance } from "./pillars";
 
 export type DocumentFigure = { label: string; value: string };
@@ -19,6 +20,8 @@ export type DocumentSection = {
   businessCase: string[];
   /** What the company carries without Abode. */
   costOfInaction: string[];
+  /** Slider configuration, present only on Scale. */
+  scaleControl?: ScaleControl;
 };
 
 /** A value the tool supplied, with where it came from. */

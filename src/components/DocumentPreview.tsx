@@ -2,7 +2,15 @@
 
 import type { RoiDocument } from "@/lib/types";
 
-export function DocumentPreview({ document }: { document: RoiDocument }) {
+export function DocumentPreview({
+  document,
+  scaleTarget,
+  onScaleTargetChange,
+}: {
+  document: RoiDocument;
+  scaleTarget?: number;
+  onScaleTargetChange?: (target: number) => void;
+}) {
   const stamp = new Date(document.generatedAt).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -54,6 +62,40 @@ export function DocumentPreview({ document }: { document: RoiDocument }) {
               >
                 {section.headline}
               </p>
+            )}
+
+            {section.scaleControl && onScaleTargetChange && (
+              <div className="mt-5 rounded-xl border border-line bg-white px-4 py-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <label
+                    htmlFor="scale-target"
+                    className="font-display text-[13.5px] font-semibold text-forest-900"
+                  >
+                    Scale to how many Participants?
+                  </label>
+                  <span className="font-mono text-[13px] text-forest-700">
+                    {(scaleTarget ?? section.scaleControl.target).toLocaleString("en-US")}
+                  </span>
+                </div>
+                <input
+                  id="scale-target"
+                  type="range"
+                  min={section.scaleControl.min}
+                  max={section.scaleControl.max}
+                  step={section.scaleControl.step}
+                  value={scaleTarget ?? section.scaleControl.target}
+                  onChange={(event) => onScaleTargetChange(Number(event.target.value))}
+                  className="mt-3 w-full accent-[var(--forest-700)]"
+                />
+                <div className="mt-1 flex justify-between text-[11.5px] text-muted">
+                  <span>{section.scaleControl.min.toLocaleString("en-US")} today</span>
+                  <span>{section.scaleControl.max.toLocaleString("en-US")}</span>
+                </div>
+                <p className="mt-2 text-[12.5px] leading-relaxed text-muted">
+                  Move the slider if you do not know the exact target. Everything below updates
+                  as it changes.
+                </p>
+              </div>
             )}
 
             {section.formulaText && (

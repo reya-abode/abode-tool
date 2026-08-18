@@ -60,8 +60,12 @@ narrative pillars last.
 
 Values the tool supplies rather than asking for. Questions per intern (5), minutes per question
 (15), minutes per message (1), the fully loaded cost of one FTE ($80,000) and the 100% follow-up
-rate on flagged interns are Estimates. Cost per external entry-level hire ($4,700) and cost per
-intern conversion ($1,500) come from NACE. Messages per journey (8.4) and Abode NPS (64) are Abode averages. Typical
+rate on flagged interns are Estimates. Cost per external entry-level hire ($4,700), cost per
+intern conversion ($1,500) and the cost of one program admin ($80,000) come from NACE.
+
+Scale carries a target slider. Moving it recomputes the pillar in the browser through
+`scaleResult` in `src/lib/compute.ts`, and the download uses whatever the slider is set to, so
+the PDF always matches the screen. Messages per journey (8.4) and Abode NPS (64) are Abode averages. Typical
 intern NPS (32) is an industry benchmark. Every one a calculation touches is listed under "Numbers
 Abode supplied" with its provenance.
 

@@ -76,6 +76,7 @@ function buildSection(
     figures: result.figures,
     businessCase: result.businessCase,
     costOfInaction: result.costOfInaction,
+    ...(result.scaleControl ? { scaleControl: result.scaleControl } : {}),
   };
 }
 

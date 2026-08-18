@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { AbodeMark } from "@/components/AbodeMark";
 import { DocumentPreview } from "@/components/DocumentPreview";
 import { PillarLadder } from "@/components/PillarLadder";
+import { applyScaleTarget } from "@/lib/compute";
 import { downloadPdf } from "@/lib/pdf";
 import type { GenerateResponse, RoiDocument } from "@/lib/types";
 
@@ -23,6 +24,13 @@ export default function Home() {
   const [document, setDocument] = useState<RoiDocument | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scaleTarget, setScaleTarget] = useState<number | null>(null);
+
+  // The slider rewrites the Scale section, so the preview and the PDF stay in step.
+  const shown = useMemo(() => {
+    if (!document || scaleTarget === null) return document;
+    return applyScaleTarget(document, scaleTarget, document.company);
+  }, [document, scaleTarget]);
 
   const matched = useMemo(
     () => new Set(document?.sections.map((section) => section.pillarId) ?? []),
@@ -44,6 +52,7 @@ export default function Home() {
         return;
       }
       setDocument(payload.document);
+      setScaleTarget(null);
       setError(null);
     } catch {
       setError("Something went wrong on our side. Try again.");
@@ -155,40 +164,44 @@ export default function Home() {
 
         <div className="mt-8 grid grid-cols-1 gap-7 lg:grid-cols-[286px_minmax(0,1fr)] lg:gap-9">
           <aside className="lg:sticky lg:top-[76px] lg:self-start">
-            <PillarLadder matched={matched} document={document} />
+            <PillarLadder matched={matched} document={shown} />
           </aside>
 
           <section>
-            {document ? (
+            {shown ? (
               <>
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <p className="text-[13.5px] text-muted">
                     <span className="font-display font-semibold text-ink">
-                      {document.sections.length}
+                      {shown.sections.length}
                     </span>{" "}
                     of 8 pillars matched
                     <span className="mx-2 text-line">|</span>
                     <span className="font-display font-semibold text-ink">
-                      {document.wordCount}
+                      {shown.wordCount}
                     </span>{" "}
                     words in your preview
                   </p>
                   <button
                     type="button"
-                    onClick={() => downloadPdf(document)}
+                    onClick={() => downloadPdf(shown)}
                     className="rounded-full bg-forest-700 px-5 py-2.5 font-display text-[13.5px] font-semibold text-white transition hover:bg-forest-900"
                   >
                     Download PDF
                   </button>
                 </div>
 
-                {document.engineNote && (
+                {shown.engineNote && (
                   <p className="mb-4 rounded-lg bg-cream-200/70 px-3.5 py-2.5 text-[13px] text-ink-soft">
-                    {document.engineNote}
+                    {shown.engineNote}
                   </p>
                 )}
 
-                <DocumentPreview document={document} />
+                <DocumentPreview
+                  document={shown}
+                  scaleTarget={scaleTarget ?? undefined}
+                  onScaleTargetChange={setScaleTarget}
+                />
               </>
             ) : (
               <EmptyState pending={pending} />
