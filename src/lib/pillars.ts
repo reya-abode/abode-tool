@@ -32,8 +32,9 @@ export type FixedKey =
   | "messagesPerJourney"
   | "internNpsAverage"
   | "industryNpsAverage"
-  | "costPerRenegedHire"
-  | "fteAnnualCost";
+  | "costPerHire"
+  | "fteAnnualCost"
+  | "followUpRate";
 
 /**
  * Values the tool supplies rather than asking for. Estimates are Abode's working
@@ -89,8 +90,8 @@ export const FIXED_INPUTS: FixedInput[] = [
     source: "early-careers benchmark",
   },
   {
-    key: "costPerRenegedHire",
-    label: "Cost per reneged hire",
+    key: "costPerHire",
+    label: "Cost per hire",
     value: 4700,
     display: "$4,700",
     provenance: "Estimate",
@@ -101,6 +102,14 @@ export const FIXED_INPUTS: FixedInput[] = [
     label: "Fully loaded cost of one FTE",
     value: 80000,
     display: "$80,000",
+    provenance: "Estimate",
+    source: "",
+  },
+  {
+    key: "followUpRate",
+    label: "Flagged interns followed up",
+    value: 100,
+    display: "100%",
     provenance: "Estimate",
     source: "",
   },
@@ -122,7 +131,6 @@ export type MetricKey =
   | "priorProgramSize"
   | "priorAdminHeadcount"
   | "lowEngagementFlagged"
-  | "followUpRatePct"
   | "conversionEngagedPct"
   | "conversionNonEngagedPct"
   | "daysFasterRamp"
@@ -140,15 +148,14 @@ export type MetricSpec = {
 };
 
 export const METRIC_SPECS: MetricSpec[] = [
-  { key: "cohortSize", label: "Cohort size", unit: "count", aliases: ["cohort size", "cohort", "interns", "intern count", "candidates", "program size", "class size"] },
+  { key: "cohortSize", label: "Program size", unit: "count", aliases: ["cohort size", "cohort", "interns", "intern count", "candidates", "program size", "class size"] },
   { key: "companyNpsScore", label: "Company NPS", unit: "score", aliases: ["company nps", "program nps", "platform nps", "nps", "net promoter", "nps score", "intern nps"] },
   { key: "baselineRenegRate", label: "Reneg rate before Abode", unit: "percent", aliases: ["baseline reneg rate", "reneg rate before", "previous reneg rate", "historical reneg", "reneg baseline"] },
   { key: "currentRenegRate", label: "Reneg rate now", unit: "percent", aliases: ["current reneg rate", "reneg rate now", "reneg rate", "renege rate", "reneg"] },
   { key: "adminHeadcount", label: "People running the program", unit: "count", aliases: ["admin headcount", "admins", "program admins", "coordinators", "team size", "fte"] },
   { key: "priorProgramSize", label: "Program size last year", unit: "count", aliases: ["prior year program size", "last year cohort", "previous cohort", "grew from", "scaled from", "program size last year"] },
   { key: "priorAdminHeadcount", label: "People running it last year", unit: "count", aliases: ["prior year admin", "previous admin headcount", "admins last year"] },
-  { key: "lowEngagementFlagged", label: "At-risk interns flagged", unit: "count", aliases: ["low engagement flagged", "at-risk flagged", "at risk candidates", "flagged interns", "disengaged", "low engagement"] },
-  { key: "followUpRatePct", label: "Flags you followed up on", unit: "percent", aliases: ["converted to a follow-up", "follow up rate", "flags routed", "flags actioned", "routed", "intervention rate", "follow up"] },
+  { key: "lowEngagementFlagged", label: "Low and moderately engaged interns flagged", unit: "count", aliases: ["low and moderately engaged interns flagged", "low and moderately engaged", "moderately engaged", "low engagement flagged", "at-risk flagged", "at risk candidates", "flagged interns", "disengaged", "low engagement"] },
   { key: "conversionEngagedPct", label: "Conversion, Abode-engaged", unit: "percent", aliases: ["conversion rate abode engaged", "conversion engaged", "conversion rate engaged", "engaged conversion"] },
   { key: "conversionNonEngagedPct", label: "Conversion, not engaged", unit: "percent", aliases: ["conversion rate non engaged", "conversion non engaged", "conversion rate unengaged", "baseline conversion"] },
   { key: "daysFasterRamp", label: "Days faster to contribute", unit: "days", aliases: ["days faster", "time to contribution", "ramp time", "faster ramp"] },
@@ -209,13 +216,14 @@ export const PILLARS: Pillar[] = [
       "Every dollar of hiring cost saved when a reneg is caught early or a bad-fit hire is flagged before day one. This is the one pillar every single account tracks, and the clearest money story.",
     formulaLabel: "Renegs avoided in dollars",
     formulaText:
-      "( [reneg rate before] − [reneg rate now] ) × [cohort size] × [cost per reneged hire]",
+      "( [reneg rate before] − [reneg rate now] ) × [program size] × [cost per hire]",
     required: ["baselineRenegRate", "currentRenegRate", "cohortSize"],
     optional: ["lowEngagementFlagged"],
     businessCase: [
       "How Abode produces this: Engagement Tracking scores every Participant across the post-offer window, and Reneg Risk Flags surface the ones going quiet while the offer is still live, so a recruiter can step in rather than finding out on the start date.",
-      "What the number represents: a reneg rate of {baseline}% falling to {current}% across {cohort} {company} Participants is about {renegsAvoided} hires retained, valued at the {cost} it costs to replace one.",
+      "What the number represents: a reneg rate of {baseline}% falling to {current}% across {cohort} Participants at {company} is about {renegsAvoided} hires retained, valued at the {cost} it costs to replace one.",
       "Where the ROI surfaces: {dollars} of hiring spend at {company} is not re-run through sourcing, screening, interviewing and offer approval, and the Dashboard reports that figure during the cycle rather than only after the class starts.",
+      "Beyond the re-hiring cost: when a reneg is caught early enough to backfill the seat, {company} does not just avoid spending the {cost} again. The role still gets filled and still produces a full summer of output, where a reneg found on the start date leaves that seat empty for the entire program.",
     ],
     costOfInaction: [
       "Without Abode, a reneg is discovered on the start date, when the only option left is to re-run the hire from scratch.",
@@ -262,12 +270,12 @@ export const PILLARS: Pillar[] = [
       "The manual work the platform absorbs, but the ROI lands only when you express it as capacity redeployed to strategic work or headcount avoided, not as raw hours saved.",
     formulaLabel: "Capacity freed in dollars",
     formulaText:
-      "Hours saved = [cohort size] × 5 questions × 15 min ÷ 60\n            + [cohort size] × 8.4 messages × 1 min ÷ 60\nDollar value = hours ÷ 2,080 × $80,000",
+      "Hours saved = [program size] × 5 questions × 15 min ÷ 60\n            + [program size] × 8.4 messages × 1 min ÷ 60\nDollar value = hours ÷ 2,080 × $80,000",
     required: ["cohortSize"],
     optional: ["loadedHourlyCost", "adminHeadcount"],
     businessCase: [
       "How Abode produces this: a Journey is built once from a Template and then sends, staggers and chases its own communications, while Tasks, Reminders and the Resource Hub answer repeat Participant questions without a coordinator in the loop.",
-      "What the number represents: {hours} hours absorbed per cycle across {cohort} {company} Participants, which is {fte} of a full-time role, or {dollars} at a fully loaded cost of {fteCost} a year.",
+      "What the number represents: {hours} hours absorbed per cycle across {cohort} Participants at {company}, which is {fte} of a full-time role, or {dollars} at a fully loaded cost of {fteCost} a year.",
       "Where the ROI surfaces: that capacity returns to the work Abode does not automate, such as program design, mentor matching and escalations, and it is the same {dollars} a team would otherwise have to add as headcount to run this volume by hand.",
       "Additional time saved: the figure above counts only the sends and questions themselves. It does not count chasing Participants who never reply, which is the slowest part of running a Program by hand, so the real capacity returned to {company} is larger than {hours} hours.",
     ],
@@ -316,16 +324,16 @@ export const PILLARS: Pillar[] = [
       "The account can now see engagement and act on it, spotting disengaged interns before they reneg. This is the connective tissue that powers Protect.",
     formulaLabel: "Early interventions",
     formulaText:
-      "[at-risk interns flagged] × [% you followed up on] = [early interventions]",
+      "[low and moderately engaged interns flagged] × 100% followed up = [early interventions]",
     required: ["lowEngagementFlagged"],
-    optional: ["followUpRatePct"],
+    optional: [],
     businessCase: [
-      "How Abode produces this: Task completion and message engagement are recorded per Participant, so disengagement shows up as a visible signal on the Dashboard rather than as silence, and the weekly review routes it to the right recruiter.",
-      "What the number represents: {coverage}, each one a {company} Participant who would otherwise have gone quiet without anyone noticing.",
+      "How Abode produces this: Task completion and message engagement are recorded per Participant, so low and moderately engaged candidates show up as a visible signal on the Dashboard rather than as silence, and the weekly review routes each one to the right recruiter.",
+      "What the number represents: {coverage}, each one a Participant at {company} who would otherwise have gone quiet without anyone noticing.",
       "Where the ROI surfaces: every early intervention is a chance to keep a hire the business has already paid to source and interview, and this visibility is the mechanism that produces the Protect number for {company}.",
     ],
     costOfInaction: [
-      "Without Engagement Tracking, disengagement looks exactly like silence, so the first real signal is the candidate who never starts.",
+      "Without Engagement Tracking, a low or moderately engaged candidate looks exactly like a quiet one, so the first real signal is the candidate who never starts.",
       "There is no list to work from and no way to prioritise who to call while the offer is still live.",
     ],
     groundedIn:
@@ -343,7 +351,7 @@ export const PILLARS: Pillar[] = [
       "Intern to full-time conversion is what TA leadership is actually measured on, and every account named it as the number one success metric. Often aspired to rather than measured yet, so flag which one you have.",
     formulaLabel: "Extra retained hires",
     formulaText:
-      "( [conversion, Abode-engaged] − [conversion, not engaged] ) × [cohort size] = [extra retained hires]",
+      "( [conversion, Abode-engaged] − [conversion, not engaged] ) × [program size] = [extra retained hires]",
     required: ["conversionEngagedPct", "conversionNonEngagedPct", "cohortSize"],
     optional: ["daysFasterRamp"],
     businessCase: [
@@ -375,8 +383,9 @@ export const PILLARS: Pillar[] = [
     optional: [],
     businessCase: [
       "How Abode produces this: Abode runs the post-offer, pre-start window that an ATS or HRIS does not cover, since the applicant record closes at offer acceptance and reopens at onboarding, and the Journey keeps Participants in contact across that entire gap.",
-      "What the number represents: {months} months between offer and start across {cohort} {company} Participants, which is the window competitors use to recruit the same people.",
+      "What the number represents: {months} months between offer and start across {cohort} Participants at {company}, which is the window competitors use to recruit the same people.",
       "Where the ROI surfaces: continuous contact protects a pipeline {company} has already paid to source and interview, across the exact period when accepted offers are most often lost.",
+      "Why candidates stay: Participants who feel connected to a Program are less likely to keep interviewing elsewhere, so by the time they start there are fewer competing offers on the table for {company} to lose them to.",
     ],
     costOfInaction: [
       "Without coverage of the offer-to-start window, candidates hear more from competitors than from the employer that already hired them.",

@@ -120,8 +120,8 @@ export function computePillar(
       const baseline = asPercent(metrics.baselineRenegRate!);
       const current = asPercent(metrics.currentRenegRate!);
       const cohort = metrics.cohortSize!;
-      const cost = FIXED_BY_KEY.costPerRenegedHire.value;
-      fixedUsed.push("costPerRenegedHire");
+      const cost = FIXED_BY_KEY.costPerHire.value;
+      fixedUsed.push("costPerHire");
       const renegsAvoided = ((baseline - current) / 100) * cohort;
       const dollars = renegsAvoided * cost;
       const tokens = {
@@ -281,17 +281,14 @@ export function computePillar(
 
     case "see": {
       const flagged = metrics.lowEngagementFlagged!;
-      const followUp =
-        metrics.followUpRatePct !== undefined ? asPercent(metrics.followUpRatePct) : 100;
+      const followUp = FIXED_BY_KEY.followUpRate.value;
+      fixedUsed.push("followUpRate");
       const interventions = (flagged * followUp) / 100;
       const tokens = {
         company: org,
         flagged: num(flagged),
         interventions: num(interventions, 1),
-        coverage:
-          metrics.followUpRatePct === undefined
-            ? `${num(flagged)} at-risk Participants surfaced this cycle and routed to a follow-up`
-            : `${num(flagged)} at-risk Participants surfaced this cycle, of which ${num(interventions, 1)} were routed to a follow-up`,
+        coverage: `${num(flagged)} low and moderately engaged Participants surfaced this cycle and routed to a follow-up`,
       };
       return {
         ...base,
@@ -299,12 +296,13 @@ export function computePillar(
         raw: interventions,
         workedFormula: `${num(flagged)} flagged × ${pct(followUp)} followed up = ${num(interventions, 1)} early interventions`,
         figures: [
-          { label: "At-risk interns flagged", value: `${num(flagged)} this cycle` },
+          { label: "Low and moderately engaged interns flagged", value: `${num(flagged)} this cycle` },
           { label: "Followed up on", value: pct(followUp) },
           { label: "Early interventions", value: num(interventions, 1) },
         ],
         businessCase: fillAll(pillar.businessCase, tokens),
         costOfInaction: fillAll(pillar.costOfInaction, tokens),
+        fixedUsed,
       };
     }
 
@@ -319,8 +317,8 @@ export function computePillar(
         { label: "Conversion, not engaged", value: pct(nonEngaged) },
         { label: "Extra retained hires", value: `${num(extra, 1)} across the cohort` },
       ];
-      const replacementCost = FIXED_BY_KEY.costPerRenegedHire.value;
-      fixedUsed.push("costPerRenegedHire");
+      const replacementCost = FIXED_BY_KEY.costPerHire.value;
+      fixedUsed.push("costPerHire");
       figures.push({
         label: "Re-hiring cost avoided",
         value: usd(extra * replacementCost),
