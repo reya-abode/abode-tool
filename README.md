@@ -60,12 +60,13 @@ narrative pillars last.
 
 Values the tool supplies rather than asking for. Questions per intern (5), minutes per question
 (15), minutes per message (1), cost per reneged hire ($4,700) and the fully loaded cost of one FTE
-($80,000) are Estimates. Messages per journey (8.4) and intern NPS (64) are Abode averages. Typical
+($80,000) are Estimates. Messages per journey (8.4) and Abode NPS (64) are Abode averages. Typical
 intern NPS (32) is an industry benchmark. Every one a calculation touches is listed under "Numbers
 Abode supplied" with its provenance.
 
-Connect and Impress appear in every story. Both compare the platform NPS against the typical
-industry 32, using the supplied figure when one is given and the Abode average of 64 otherwise.
+Connect and Impress appear in every story. Connect compares the Company NPS against the typical
+industry 32, falling back to the Abode average of 64 when no figure is given. Impress always uses
+the Abode NPS of 64 against the same benchmark.
 
 ## Design
 

@@ -70,9 +70,9 @@ export function companyLabel(company: string | null | undefined): string {
   return trimmed || "this program";
 }
 
-/** Platform NPS against the industry benchmark. Shared by Connect and Impress. */
+/** Company NPS against the industry benchmark, falling back to the Abode average. */
 function npsComparison(metrics: Metrics, fixedUsed: FixedKey[]) {
-  const supplied = metrics.platformNpsScore;
+  const supplied = metrics.companyNpsScore;
   const nps = supplied !== undefined ? supplied : FIXED_BY_KEY.internNpsAverage.value;
   if (supplied === undefined) fixedUsed.push("internNpsAverage");
   const industry = FIXED_BY_KEY.industryNpsAverage.value;
@@ -162,10 +162,10 @@ export function computePillar(
         ...base,
         headline: `NPS ${num(c.nps, 1)} vs ${num(c.industry)}`,
         raw: c.nps,
-        workedFormula: `${num(c.nps, 1)} platform NPS vs ${num(c.industry)} typical industry average = ${num(c.delta, 1)} points higher`,
+        workedFormula: `${num(c.nps, 1)} Company NPS vs ${num(c.industry)} typical industry average = ${num(c.delta, 1)} points higher`,
         figures: [
           {
-            label: c.supplied ? "Platform NPS" : "Platform NPS, Abode average",
+            label: c.supplied ? "Company NPS" : "Company NPS, Abode average shown",
             value: num(c.nps, 1),
           },
           { label: "Intern NPS, typical industry", value: num(c.industry) },
@@ -373,25 +373,27 @@ export function computePillar(
     }
 
     case "impress": {
-      const c = npsComparison(metrics, fixedUsed);
+      // Pillar 8 always uses Abode's own NPS, never the company's figure.
+      const abodeNps = FIXED_BY_KEY.internNpsAverage.value;
+      const industryNps = FIXED_BY_KEY.industryNpsAverage.value;
+      fixedUsed.push("internNpsAverage", "industryNpsAverage");
+      const delta = abodeNps - industryNps;
+      const multiple = abodeNps / industryNps;
       const tokens = {
         company: org,
-        abodeNps: num(c.nps, 1),
-        industryNps: num(c.industry),
-        delta: num(c.delta, 1),
-        multiple: num(c.multiple, 1),
+        abodeNps: num(abodeNps),
+        industryNps: num(industryNps),
+        delta: num(delta),
+        multiple: num(multiple, 1),
       };
       return {
         ...base,
-        headline: `NPS ${num(c.nps, 1)} vs ${num(c.industry)}`,
-        raw: c.nps,
-        workedFormula: `${num(c.nps, 1)} platform NPS vs ${num(c.industry)} typical industry average = ${num(c.delta, 1)} points higher`,
+        headline: `NPS ${num(abodeNps)} vs ${num(industryNps)}`,
+        raw: abodeNps,
+        workedFormula: `${num(abodeNps)} Abode NPS vs ${num(industryNps)} typical industry average = ${num(delta)} points higher`,
         figures: [
-          {
-            label: c.supplied ? "Platform NPS" : "Platform NPS, Abode average",
-            value: num(c.nps, 1),
-          },
-          { label: "Intern NPS, typical industry", value: num(c.industry) },
+          { label: "Abode NPS", value: num(abodeNps) },
+          { label: "Intern NPS, typical industry", value: num(industryNps) },
         ],
         businessCase: fillAll(pillar.businessCase, tokens),
         costOfInaction: fillAll(pillar.costOfInaction, tokens),

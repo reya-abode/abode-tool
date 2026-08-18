@@ -74,7 +74,7 @@ export const FIXED_INPUTS: FixedInput[] = [
   },
   {
     key: "internNpsAverage",
-    label: "Intern NPS",
+    label: "Abode NPS",
     value: 64,
     display: "64",
     provenance: "Abode average",
@@ -115,7 +115,7 @@ export const HOURS_PER_FTE_YEAR = 2080;
 
 export type MetricKey =
   | "cohortSize"
-  | "platformNpsScore"
+  | "companyNpsScore"
   | "baselineRenegRate"
   | "currentRenegRate"
   | "adminHeadcount"
@@ -141,7 +141,7 @@ export type MetricSpec = {
 
 export const METRIC_SPECS: MetricSpec[] = [
   { key: "cohortSize", label: "Cohort size", unit: "count", aliases: ["cohort size", "cohort", "interns", "intern count", "candidates", "program size", "class size"] },
-  { key: "platformNpsScore", label: "Platform NPS", unit: "score", aliases: ["platform nps", "abode nps", "program nps", "nps", "net promoter", "nps score", "intern nps"] },
+  { key: "companyNpsScore", label: "Company NPS", unit: "score", aliases: ["company nps", "program nps", "platform nps", "nps", "net promoter", "nps score", "intern nps"] },
   { key: "baselineRenegRate", label: "Reneg rate before Abode", unit: "percent", aliases: ["baseline reneg rate", "reneg rate before", "previous reneg rate", "historical reneg", "reneg baseline"] },
   { key: "currentRenegRate", label: "Reneg rate now", unit: "percent", aliases: ["current reneg rate", "reneg rate now", "reneg rate", "renege rate", "reneg"] },
   { key: "adminHeadcount", label: "People running the program", unit: "count", aliases: ["admin headcount", "admins", "program admins", "coordinators", "team size", "fte"] },
@@ -235,17 +235,17 @@ export const PILLARS: Pillar[] = [
     roiMeaning:
       "The pre-day-one experience that makes interns show up ready and connected, measured as the Abode intern NPS average against the typical early-careers benchmark.",
     formulaLabel: "Intern sentiment",
-    formulaText: "Intern sentiment = [platform NPS] vs 32 typical industry average",
+    formulaText: "Intern sentiment = [company NPS] vs 32 typical industry average",
     required: [],
-    optional: ["platformNpsScore"],
+    optional: ["companyNpsScore"],
     businessCase: [
       "How Abode produces this: the pre-day-one Journey delivers Templates, Tasks and Resources on a schedule, and the Journey Survey captures how the Cohort rates the experience while it is still running.",
-      "What the number represents: interns on the Abode platform return an NPS of {abodeNps}, against a typical early-careers benchmark of {industryNps}, so the platform roughly {multiple}× how candidates rate the stretch between offer and start.",
+      "What the number represents: a Company NPS of {abodeNps} against a typical early-careers benchmark of {industryNps} means candidates rate the stretch between offer and start roughly {multiple}× higher than the market norm.",
       "Where the ROI surfaces: a Cohort that arrives already connected to the Program is the leading edge of the conversion story, and the Survey is what turns that from a belief into a number leadership can be shown.",
     ],
     costOfInaction: [
       "Without a structured pre-start Journey, candidates go quiet between offer and start and arrive cold, with no shared context and no relationships in place.",
-      "Programs without it sit closer to the industry NPS of {industryNps} than to the {abodeNps} Abode programs average, with no sentiment figure to report either way.",
+      "Programs without it sit closer to the industry NPS of {industryNps} than to what Abode programs return, with no sentiment figure to report either way.",
     ],
     groundedIn:
       "Amazon: 99% belonging as a kingpin goal, 97% adoption against an 80% target, and community named the single biggest impact. Spectrum: structured prep calls and office hours. Mondelez, Whitley Penn, Energy Transfer and UHY all raised this without being asked.",
@@ -396,12 +396,12 @@ export const PILLARS: Pillar[] = [
     roiMeaning:
       "The experience shapes CSAT and NPS and employer reputation, and the early-career cohort is vocal, so it feeds next year's applicant quality and volume. Usually a supporting narrative under Connect.",
     formulaLabel: "Intern sentiment",
-    formulaText: "Intern sentiment = [platform NPS] vs 32 typical industry average",
+    formulaText: "Intern sentiment = Abode NPS 64 vs 32 typical industry average",
     required: [],
-    optional: ["platformNpsScore"],
+    optional: [],
     businessCase: [
       "How Abode produces this: between offer and start the Journey is the main point of contact with the employer, so the Templates, Resources and Tasks a Participant sees carry most of the impression they form before they arrive.",
-      "What the number represents: an NPS of {abodeNps} against a typical early-careers benchmark of {industryNps} is the clearest read on how {company} Participants describe the experience to peers, mentors and campus contacts.",
+      "What the number represents: an Abode NPS of {abodeNps} against a typical early-careers benchmark of {industryNps} is the clearest read on how Participants describe the experience to peers, mentors and campus contacts.",
       "Where the ROI surfaces: early-career candidates discuss their experience publicly on LinkedIn, Handshake and campus, so it reaches applicant quality and volume in the following hiring cycle rather than this one.",
     ],
     costOfInaction: [
