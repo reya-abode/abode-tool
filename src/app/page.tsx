@@ -14,7 +14,7 @@ Reneg rate: 15% last year, 6% this cycle
 People running the program: 2
 Program size last year: 140
 Low and moderately engaged interns flagged: 34
-Conversion: 68% for engaged interns vs 51% for the rest
+Employee to FTE conversion rate: 68%
 Offer to start: 7 months`;
 
 export default function Home() {
@@ -106,7 +106,7 @@ export default function Home() {
               </label>
               <p className="mt-1 text-[13.5px] text-muted">
                 One per line works best. Program size, company NPS, reneg rate, admins,
-                engagement flags, conversion, offer to start.
+                engagement flags, FTE conversion rate, offer to start.
               </p>
             </div>
             <button

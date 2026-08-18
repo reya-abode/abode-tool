@@ -307,22 +307,23 @@ export function computePillar(
     }
 
     case "improve": {
-      const engaged = asPercent(metrics.conversionEngagedPct!);
-      const nonEngaged = asPercent(metrics.conversionNonEngagedPct!);
       const cohort = metrics.cohortSize!;
-      const extra = ((engaged - nonEngaged) / 100) * cohort;
+      const rate = asPercent(metrics.fteConversionRatePct!);
+      const externalCost = FIXED_BY_KEY.costPerHire.value;
+      const internCost = FIXED_BY_KEY.costPerInternConversion.value;
+      fixedUsed.push("costPerHire", "costPerInternConversion");
+
+      // Roles are rounded before pricing, so roles x saving matches the dollar shown.
+      const roles = Math.round(((cohort * rate) / 100) * 10) / 10;
+      const savingPerRole = externalCost - internCost;
+      const value = roles * savingPerRole;
 
       const figures: ComputedFigure[] = [
-        { label: "Conversion, Abode-engaged", value: pct(engaged) },
-        { label: "Conversion, not engaged", value: pct(nonEngaged) },
-        { label: "Extra retained hires", value: `${num(extra, 1)} across the cohort` },
+        { label: "Employee to FTE conversion rate", value: pct(rate) },
+        { label: "Roles filled from the intern pool", value: num(roles, 1) },
+        { label: "Saving per role", value: `${usd(externalCost)} − ${usd(internCost)} = ${usd(savingPerRole)}` },
+        { label: "Value of roles filled", value: usd(value) },
       ];
-      const replacementCost = FIXED_BY_KEY.costPerHire.value;
-      fixedUsed.push("costPerHire");
-      figures.push({
-        label: "Re-hiring cost avoided",
-        value: usd(extra * replacementCost),
-      });
       if (metrics.daysFasterRamp !== undefined) {
         figures.push({
           label: "Ready to contribute",
@@ -336,17 +337,20 @@ export function computePillar(
 
       const tokens = {
         company: org,
-        engaged: String(engaged),
-        nonEngaged: String(nonEngaged),
-        extra: num(extra, 1),
         cohort: num(cohort),
+        rate: num(rate, 1),
+        roles: num(roles, 1),
+        value: usd(value),
+        externalCost: usd(externalCost),
+        internCost: usd(internCost),
+        saving: usd(savingPerRole),
         rampClause,
       };
       return {
         ...base,
-        headline: `${num(extra, 1)} retained hires`,
-        raw: extra,
-        workedFormula: `( ${pct(engaged)} − ${pct(nonEngaged)} ) × ${num(cohort)} = ${num(extra, 1)} extra retained hires`,
+        headline: usd(value),
+        raw: value,
+        workedFormula: `${num(cohort)} × ${pct(rate)} = ${num(roles, 1)} roles\n${num(roles, 1)} × ( ${usd(externalCost)} − ${usd(internCost)} ) = ${usd(value)}`,
         figures,
         businessCase: fillAll(pillar.businessCase, tokens),
         costOfInaction: fillAll(pillar.costOfInaction, tokens),
@@ -511,15 +515,6 @@ export function parseMetricsHeuristically(input: string): Metrics {
     const second = parseFloat(renegPair[2]);
     set("baselineRenegRate", Math.max(first, second));
     set("currentRenegRate", Math.min(first, second));
-  }
-
-  const conversionPair =
-    /conversion[^\n]*?(\d[\d.]*)\s?%[^\n]*?(?:vs|versus|against|compared to)[^\n]*?(\d[\d.]*)\s?%/.exec(
-      text,
-    );
-  if (conversionPair) {
-    set("conversionEngagedPct", parseFloat(conversionPair[1]));
-    set("conversionNonEngagedPct", parseFloat(conversionPair[2]));
   }
 
   const scalePair = /(?:grew|scaled|up) from (\d[\d,]*)[^\n]*?to (\d[\d,]*)/.exec(text);

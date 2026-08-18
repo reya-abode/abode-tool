@@ -33,6 +33,7 @@ export type FixedKey =
   | "internNpsAverage"
   | "industryNpsAverage"
   | "costPerHire"
+  | "costPerInternConversion"
   | "fteAnnualCost"
   | "followUpRate";
 
@@ -91,11 +92,19 @@ export const FIXED_INPUTS: FixedInput[] = [
   },
   {
     key: "costPerHire",
-    label: "Cost per hire",
+    label: "Cost per external entry-level hire",
     value: 4700,
     display: "$4,700",
-    provenance: "Estimate",
-    source: "",
+    provenance: "Industry average",
+    source: "NACE",
+  },
+  {
+    key: "costPerInternConversion",
+    label: "Cost per intern conversion",
+    value: 1500,
+    display: "$1,500",
+    provenance: "Industry average",
+    source: "NACE",
   },
   {
     key: "fteAnnualCost",
@@ -131,8 +140,7 @@ export type MetricKey =
   | "priorProgramSize"
   | "priorAdminHeadcount"
   | "lowEngagementFlagged"
-  | "conversionEngagedPct"
-  | "conversionNonEngagedPct"
+  | "fteConversionRatePct"
   | "daysFasterRamp"
   | "monthsOfferToStart"
   | "loadedHourlyCost";
@@ -156,8 +164,7 @@ export const METRIC_SPECS: MetricSpec[] = [
   { key: "priorProgramSize", label: "Program size last year", unit: "count", aliases: ["prior year program size", "last year cohort", "previous cohort", "grew from", "scaled from", "program size last year"] },
   { key: "priorAdminHeadcount", label: "People running it last year", unit: "count", aliases: ["prior year admin", "previous admin headcount", "admins last year"] },
   { key: "lowEngagementFlagged", label: "Low and moderately engaged interns flagged", unit: "count", aliases: ["low and moderately engaged interns flagged", "low and moderately engaged", "moderately engaged", "low engagement flagged", "at-risk flagged", "at risk candidates", "flagged interns", "disengaged", "low engagement"] },
-  { key: "conversionEngagedPct", label: "Conversion, Abode-engaged", unit: "percent", aliases: ["conversion rate abode engaged", "conversion engaged", "conversion rate engaged", "engaged conversion"] },
-  { key: "conversionNonEngagedPct", label: "Conversion, not engaged", unit: "percent", aliases: ["conversion rate non engaged", "conversion non engaged", "conversion rate unengaged", "baseline conversion"] },
+  { key: "fteConversionRatePct", label: "Employee to FTE conversion rate", unit: "percent", aliases: ["employee to fte conversion rate", "fte conversion rate", "intern conversion rate", "conversion to full time", "conversion rate", "conversion"] },
   { key: "daysFasterRamp", label: "Days faster to contribute", unit: "days", aliases: ["days faster", "time to contribution", "ramp time", "faster ramp"] },
   { key: "monthsOfferToStart", label: "Months between offer and start", unit: "months", aliases: ["offer to start", "months offer to start", "months out", "recruiting timeline", "pre-start gap"] },
   { key: "loadedHourlyCost", label: "Hourly cost of your team", unit: "usd", aliases: ["loaded hourly cost", "hourly cost", "fully loaded rate", "cost per hour"] },
@@ -349,19 +356,19 @@ export const PILLARS: Pillar[] = [
     subtitle: "Conversion, quality and time to contribution",
     roiMeaning:
       "Intern to full-time conversion is what TA leadership is actually measured on, and every account named it as the number one success metric. Often aspired to rather than measured yet, so flag which one you have.",
-    formulaLabel: "Extra retained hires",
+    formulaLabel: "Value of roles filled from the intern pool",
     formulaText:
-      "( [conversion, Abode-engaged] − [conversion, not engaged] ) × [program size] = [extra retained hires]",
-    required: ["conversionEngagedPct", "conversionNonEngagedPct", "cohortSize"],
+      "Roles filled from intern pool = [program size] × [employee to FTE conversion rate]\nValue ($) = roles filled × ( [cost per external entry-level hire] − [cost per intern conversion] )",
+    required: ["cohortSize", "fteConversionRatePct"],
     optional: ["daysFasterRamp"],
     businessCase: [
       "How Abode produces this: Participants who work through the Journey arrive with context, expectations and internal connections already established, which shapes how quickly they contribute and whether they accept a return offer.",
-      "What the number represents: {engaged}% conversion among engaged Participants against {nonEngaged}% among the rest, applied across {cohort}, is about {extra} additional hires retained at {company}{rampClause}.",
-      "Where the ROI surfaces: converting an intern is the lowest-cost hiring route available, and Engagement Tracking is what lets {company} attribute the difference to the Journey rather than to chance.",
+      "What the number represents: a conversion rate of {rate}% across {cohort} Participants fills {roles} full-time roles from the intern pool, each costing {internCost} to convert against {externalCost} to hire externally{rampClause}.",
+      "Where the ROI surfaces: {value} that {company} does not spend on external entry-level recruiting, because the sourcing, screening and interviewing behind those roles was already paid for by the internship program.",
     ],
     costOfInaction: [
       "Without Abode, conversion gets measured after the fact with nothing to attribute it to, so the program cannot show which candidates it actually influenced.",
-      "Every intern who does not convert becomes a full external hire to fund, at a cost the program already spent once.",
+      "Every role not filled from the intern pool becomes an external entry-level hire at {externalCost} rather than a {internCost} conversion, spending again on a pipeline the program already built.",
     ],
     groundedIn:
       "Every account calls conversion the ultimate metric. Amazon is about to run the Abode versus non-Abode conversion study at off-boarding, which is the strongest proof point coming. Koch wants time to contribution measured.",
