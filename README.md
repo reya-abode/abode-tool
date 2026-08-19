@@ -23,11 +23,14 @@ pillars" with the exact number to collect.
 If there is no API key, or either AI step fails, the app falls back to keyword matching and
 standard wording, and says so above the document. The formulas and the PDF are identical either way.
 
+No key is committed. `.env*` is gitignored apart from `.env.example`, so the key stays a local
+environment variable, and on Vercel it is a project environment variable.
+
 ## Setup
 
 ```bash
 npm install
-echo 'ANTHROPIC_API_KEY=sk-ant-...' > .env.local   # optional, turns on AI writing
+cp .env.example .env.local                         # then paste your key in, optional
 npm run dev                                        # http://localhost:3000
 ```
 
@@ -75,8 +78,8 @@ industry 32, falling back to the Abode average of 64 when no figure is given. Im
 the Abode NPS of 64 against the same benchmark.
 
 The total saved sits at the top of the tool and at the top of the document, adding Protect, Save
-and Scale. Type a contract value under Company and the total is compared against it, so the
-document says what the account gets back for what it pays.
+and Scale. Type a contract value under Company and the total is divided by it, so the tool and
+the document both show the return as a multiple of what the account pays.
 
 ## Design
 

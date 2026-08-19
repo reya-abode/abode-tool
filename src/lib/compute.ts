@@ -177,6 +177,20 @@ export function formatMoney(value: number): string {
   return usd(value);
 }
 
+/** Total saved against what the account pays, expressed as a multiple of the contract. */
+export type ContractComparison = {
+  /** The multiple itself, such as "5.5x". */
+  multiple: string;
+  ratio: number;
+  total: string;
+  contract: string;
+  /** Value over and above the contract, or the shortfall when the multiple is under 1. */
+  net: string;
+  covered: boolean;
+  /** One line for the document and the PDF. */
+  detail: string;
+};
+
 /**
  * How the total saved compares with what the account pays. Returns null when no contract
  * value has been entered.
@@ -184,19 +198,21 @@ export function formatMoney(value: number): string {
 export function contractComparison(
   total: number,
   contract: number | null,
-): { headline: string; detail: string } | null {
+): ContractComparison | null {
   if (!contract || contract <= 0) return null;
-  const multiple = total / contract;
+  const ratio = total / contract;
   const net = total - contract;
-  if (net >= 0) {
-    return {
-      headline: `${multiple.toFixed(1)}x the contract value`,
-      detail: `Abode returns ${usd(total)} against a contract of ${usd(contract)}, a net gain of ${usd(net)}.`,
-    };
-  }
+  const covered = net >= 0;
   return {
-    headline: `${multiple.toFixed(1)}x the contract value`,
-    detail: `Abode returns ${usd(total)} against a contract of ${usd(contract)}, which is ${usd(Math.abs(net))} short of covering it on the pillars priced so far.`,
+    multiple: `${ratio.toFixed(1)}x`,
+    ratio,
+    total: usd(total),
+    contract: usd(contract),
+    net: usd(Math.abs(net)),
+    covered,
+    detail: covered
+      ? `Abode returns ${usd(total)} against a contract of ${usd(contract)}, so every dollar spent comes back ${ratio.toFixed(1)} times over, a net gain of ${usd(net)}.`
+      : `Abode returns ${usd(total)} against a contract of ${usd(contract)}, so the pillars priced so far cover ${ratio.toFixed(1)} times the spend, leaving ${usd(Math.abs(net))} still to earn back.`,
   };
 }
 

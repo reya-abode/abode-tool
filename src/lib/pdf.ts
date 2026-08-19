@@ -162,7 +162,7 @@ function drawMasthead(ctx: Ctx, document: RoiDocument): void {
   space(ctx, 16);
 }
 
-/** The money block that opens the document: Protect, Save and Scale added together. */
+/** The money block that opens the document: the total, the contract, and the multiple. */
 function drawTotal(ctx: Ctx, document: RoiDocument): void {
   const total = totalSaved(document.sections);
   const comparison = contractComparison(total, document.contractValue);
@@ -170,7 +170,7 @@ function drawTotal(ctx: Ctx, document: RoiDocument): void {
   const innerWidth = CONTENT_WIDTH - padding * 2;
   const note = `Protect, Save and Scale added together.${comparison ? ` ${comparison.detail}` : ""}`;
   const body = measure(ctx.doc, note, 9, ["helvetica", "normal"], innerWidth);
-  const boxHeight = padding * 2 + 12 + 24 + body.height;
+  const boxHeight = padding * 2 + 12 + 26 + body.height;
 
   ensure(ctx, boxHeight + 14);
   ctx.doc.setFillColor(...SAY_BG);
@@ -178,23 +178,32 @@ function drawTotal(ctx: Ctx, document: RoiDocument): void {
   ctx.doc.setFillColor(...FOREST);
   ctx.doc.rect(MARGIN.left, ctx.y, 2.5, boxHeight, "F");
 
-  let inner = ctx.y + padding;
-  ctx.doc.setFont("helvetica", "bold");
-  ctx.doc.setFontSize(7);
-  ctx.doc.setTextColor(...FOREST);
-  ctx.doc.text("TOTAL SAVED WITH ABODE", MARGIN.left + padding, inner + 6);
-  inner += 12;
+  const columns: { label: string; value: string; size: number }[] = [
+    { label: "TOTAL SAVED WITH ABODE", value: formatMoney(total), size: 22 },
+  ];
+  if (comparison) {
+    columns.push({ label: "CONTRACT VALUE", value: comparison.contract, size: 16 });
+    columns.push({ label: "RETURN ON THE CONTRACT", value: comparison.multiple, size: 22 });
+  }
 
-  ctx.doc.setFontSize(22);
-  ctx.doc.setTextColor(...FOREST);
-  ctx.doc.text(formatMoney(total), MARGIN.left + padding, inner + 19);
-  inner += 24;
+  const top = ctx.y + padding;
+  const columnWidth = innerWidth / columns.length;
+  columns.forEach((column, index) => {
+    const x = MARGIN.left + padding + index * columnWidth;
+    ctx.doc.setFont("helvetica", "bold");
+    ctx.doc.setFontSize(7);
+    ctx.doc.setTextColor(...FOREST);
+    ctx.doc.text(column.label, x, top + 6);
+    ctx.doc.setFontSize(column.size);
+    ctx.doc.text(column.value, x, top + 12 + 19);
+  });
 
   ctx.doc.setFont("helvetica", "normal");
   ctx.doc.setFontSize(9);
   ctx.doc.setTextColor(...INK);
+  const noteTop = top + 12 + 26;
   body.lines.forEach((line, i) => {
-    ctx.doc.text(line, MARGIN.left + padding, inner + 7.7 + i * 9 * LINE_SPACING);
+    ctx.doc.text(line, MARGIN.left + padding, noteTop + 7.7 + i * 9 * LINE_SPACING);
   });
 
   ctx.y += boxHeight + 14;

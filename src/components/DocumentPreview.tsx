@@ -32,11 +32,31 @@ export function DocumentPreview({
         </p>
 
         <div className="mt-6 rounded-xl bg-sage-100 px-5 py-5">
-          <p className="eyebrow text-forest-700">Total saved with Abode</p>
-          <p className="mt-1.5 font-display text-[32px] font-semibold leading-none text-forest-900">
-            {formatMoney(total)}
-          </p>
-          <p className="mt-2.5 text-[13.5px] leading-relaxed text-forest-700">
+          <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
+            <div>
+              <p className="eyebrow text-forest-700">Total saved with Abode</p>
+              <p className="mt-1.5 font-display text-[32px] font-semibold leading-none text-forest-900">
+                {formatMoney(total)}
+              </p>
+            </div>
+            {comparison && (
+              <>
+                <div>
+                  <p className="eyebrow text-forest-700">Contract value</p>
+                  <p className="mt-1.5 font-display text-[22px] font-semibold leading-none text-forest-900">
+                    {comparison.contract}
+                  </p>
+                </div>
+                <div>
+                  <p className="eyebrow text-forest-700">Return on the contract</p>
+                  <p className="mt-1.5 font-display text-[32px] font-semibold leading-none text-forest-900">
+                    {comparison.multiple}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+          <p className="mt-3 text-[13.5px] leading-relaxed text-forest-700">
             Protect, Save and Scale added together.
             {comparison ? ` ${comparison.detail}` : ""}
           </p>

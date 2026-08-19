@@ -15,7 +15,7 @@ Reneg rate: 15% last year, 6% this cycle
 People running the program: 2
 Program size last year: 140
 Low and moderately engaged interns flagged: 34
-Employee to FTE conversion rate: 68%
+Intern to FTE conversion rate: 68%
 Offer to start: 7 months`;
 
 export default function Home() {
@@ -106,27 +106,46 @@ export default function Home() {
 
       <main className="mx-auto -mt-20 w-full max-w-[1240px] flex-1 px-5 pb-16 sm:px-8">
         <div className="rise card mb-5 border-l-[3px] border-forest-500 bg-sage-100 p-5 sm:p-7">
-          <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+          <div className="flex flex-wrap items-end gap-x-10 gap-y-5">
             <div>
               <p className="eyebrow text-forest-700">Total saved with Abode</p>
               <p className="mt-2 font-display text-[40px] font-semibold leading-none text-forest-900">
                 {formatMoney(total)}
               </p>
-              <p className="mt-2.5 max-w-xl text-[13.5px] leading-relaxed text-forest-700">
-                {total > 0
-                  ? "Protect, Save and Scale added together."
-                  : "Protect, Save and Scale added together. Build the story below to fill this in."}
+              <p className="mt-2 text-[13px] text-forest-700">
+                Protect, Save and Scale added together
               </p>
             </div>
-            {comparison && (
-              <div className="rounded-xl bg-white/70 px-4 py-3">
-                <p className="font-display text-[17px] font-semibold text-forest-900">
-                  {comparison.headline}
-                </p>
-                <p className="mt-1 max-w-xs text-[13px] leading-relaxed text-forest-700">
-                  {comparison.detail}
-                </p>
-              </div>
+
+            {comparison ? (
+              <>
+                <div className="hidden h-14 w-px self-center bg-forest-500/25 sm:block" />
+                <div>
+                  <p className="eyebrow text-forest-700">Contract value</p>
+                  <p className="mt-2 font-display text-[26px] font-semibold leading-none text-forest-900">
+                    {comparison.contract}
+                  </p>
+                  <p className="mt-2 text-[13px] text-forest-700">What the program pays Abode</p>
+                </div>
+
+                <div className="rounded-xl bg-forest-700 px-6 py-4 text-white">
+                  <p className="eyebrow text-sage-200">Return on the contract</p>
+                  <p className="mt-2 font-display text-[40px] font-semibold leading-none">
+                    {comparison.multiple}
+                  </p>
+                  <p className="mt-2 text-[13px] text-sage-100/90">
+                    {comparison.covered
+                      ? `${comparison.net} more than the contract costs`
+                      : `${comparison.net} short of the contract cost`}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <p className="max-w-xs text-[13.5px] leading-relaxed text-forest-700">
+                {total > 0
+                  ? "Add a contract value under Company to see what this returns as a multiple of what the program pays."
+                  : "Build the story below to fill this in, then add a contract value to see the return as a multiple."}
+              </p>
             )}
           </div>
         </div>
@@ -154,7 +173,8 @@ export default function Home() {
             Contract value
           </label>
           <p className="mt-1 text-[13.5px] text-muted">
-            The annual Abode contract, compared against the total saved above.
+            The annual Abode contract. The total saved above is divided by this to give the
+            return as a multiple.
           </p>
           <input
             id="contract"
